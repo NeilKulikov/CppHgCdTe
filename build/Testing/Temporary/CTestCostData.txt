@@ -1,4 +1,0 @@
-Integration 7 0.00209716
-Splines 7 0.00115532
-Models 3 0.00175736
----

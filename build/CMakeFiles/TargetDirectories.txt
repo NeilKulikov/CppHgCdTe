@@ -1,9 +1,0 @@
-/Users/neilkulikov/Documents/SWork/task001b/build/CMakeFiles/rebuild_cache.dir
-/Users/neilkulikov/Documents/SWork/task001b/build/CMakeFiles/edit_cache.dir
-/Users/neilkulikov/Documents/SWork/task001b/build/CMakeFiles/test.dir
-/Users/neilkulikov/Documents/SWork/task001b/build/build/test/CMakeFiles/rebuild_cache.dir
-/Users/neilkulikov/Documents/SWork/task001b/build/build/test/CMakeFiles/edit_cache.dir
-/Users/neilkulikov/Documents/SWork/task001b/build/build/test/CMakeFiles/test3.dir
-/Users/neilkulikov/Documents/SWork/task001b/build/build/test/CMakeFiles/test.dir
-/Users/neilkulikov/Documents/SWork/task001b/build/build/test/CMakeFiles/test2.dir
-/Users/neilkulikov/Documents/SWork/task001b/build/build/test/CMakeFiles/test1.dir
