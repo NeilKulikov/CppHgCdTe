@@ -1,5 +1,7 @@
 *.o
 *.out
 *.so
+*.DS_Store
 
 /build/*
+/.vscode/*
