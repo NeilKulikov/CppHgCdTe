@@ -1,0 +1,22 @@
+Start testing: Sep 10 20:11 MSK
+----------------------------------------------------------
+3/3 Testing: Models
+3/3 Test: Models
+Command: "/Users/neilkulikov/Documents/SWork/task001b/build/bin/test3"
+Directory: /Users/neilkulikov/Documents/SWork/task001b/build/build/test
+"Models" start time: Sep 10 20:11 MSK
+Output:
+----------------------------------------------------------
+Running 2 test cases...
+
+[1;32;49m*** No errors detected
+[0;39;49m
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"Models" end time: Sep 10 20:11 MSK
+"Models" time elapsed: 00:00:00
+----------------------------------------------------------
+
+End testing: Sep 10 20:11 MSK
