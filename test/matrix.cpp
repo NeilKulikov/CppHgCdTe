@@ -65,14 +65,8 @@ BOOST_AUTO_TEST_CASE(MatrixAccess)
     BOOST_CHECK_CLOSE(to.imag(), GSL_IMAG(fromg), 1.e-4);
 }
 
-BOOST_AUTO_TEST_CASE(MatrixFromArray)
+BOOST_AUTO_TEST_CASE(MatrixFromArray1)
 {
-    /*std::vector< std::complex<double> > data = 
-        {
-            {0.123, 3.54}, {345., -127.}, {1e-5, 1e-2},
-            {0.789, 4.59}, {10.1, 7.891}, {678., 1.e8},
-            {5.291, 5.78}, {0.02, 7.101}, {8.87, 12.4}
-        };*/
     std::vector<double> data = 
         {
             0.123, 3.54, 345., -127., 1e-5, 1e-2,
@@ -80,11 +74,85 @@ BOOST_AUTO_TEST_CASE(MatrixFromArray)
             5.291, 5.78, 0.02, 7.101, 8.87, 12.4
         };
     auto mat = matrix::cmat(data);
-    //BOOST_CHECK_CLOSE(mat.at(2, 1).imag(), 7.101, 1.e-4);
-    BOOST_CHECK_CLOSE(mat.at(0, 0).real(), 1.e-5, 1.e-4);
-    BOOST_CHECK_CLOSE(mat.at(0, 0).imag(), 1.e-5, 1.e-4);
-    //BOOST_CHECK_CLOSE(mat.at(0, 0).imag(), 3.54, 1.e-4);
-    //BOOST_CHECK_CLOSE(mat.at(2, 2).real(), 8.87, 1.e-4);
+    BOOST_CHECK_CLOSE(mat.at(2, 1).imag(), 7.101, 1.e-4);
+    BOOST_CHECK_CLOSE(mat.at(0, 0).real(), 0.123, 1.e-4);
+    BOOST_CHECK_CLOSE(mat.at(0, 0).imag(), 3.54, 1.e-4);
+    BOOST_CHECK_CLOSE(mat.at(1, 2).real(), 678., 1.e-4);
+    BOOST_CHECK_CLOSE(mat.at(2, 2).real(), 8.87, 1.e-4);
+}
+
+BOOST_AUTO_TEST_CASE(MatrixFromArray2)
+{
+    std::vector< std::complex<double> > data = 
+        {
+            {0.123, 3.54}, {345., -127.}, {1e-5, 1e-2},
+            {0.789, 4.59}, {10.1, 7.891}, {678., 1.e8},
+            {5.291, 5.78}, {0.02, 7.101}, {8.87, 12.4}
+        };
+    auto mat = matrix::cmat(data);
+    BOOST_CHECK_CLOSE(mat.at(2, 1).imag(), 7.101, 1.e-4);
+    BOOST_CHECK_CLOSE(mat.at(0, 0).real(), 0.123, 1.e-4);
+    BOOST_CHECK_CLOSE(mat.at(0, 0).imag(), 3.54, 1.e-4);
+    BOOST_CHECK_CLOSE(mat.at(1, 2).real(), 678., 1.e-4);
+    BOOST_CHECK_CLOSE(mat.at(2, 2).real(), 8.87, 1.e-4);
+}
+
+BOOST_AUTO_TEST_CASE(MatrixFromMatrix)
+{
+    std::vector< std::complex<double> > data = 
+        {
+            {0.123, 3.54}, {345., -127.}, {1e-5, 1e-2},
+            {0.789, 4.59}, {10.1, 7.891}, {678., 1.e8},
+            {5.291, 5.78}, {0.02, 7.101}, {8.87, 12.4}
+        };
+    auto mat1 = matrix::cmat(data);
+    auto mat2 = matrix::cmat(mat1);
+    BOOST_CHECK_CLOSE(mat2.at(2, 1).imag(), 7.101, 1.e-4);
+    BOOST_CHECK_CLOSE(mat2.at(0, 0).real(), 0.123, 1.e-4);
+    BOOST_CHECK_CLOSE(mat2.at(0, 0).imag(), 3.54, 1.e-4);
+    BOOST_CHECK_CLOSE(mat2.at(1, 2).real(), 678., 1.e-4);
+    BOOST_CHECK_CLOSE(mat2.at(2, 2).real(), 8.87, 1.e-4);
+}
+
+BOOST_AUTO_TEST_CASE(HermFromMatrix)
+{
+    std::vector< std::complex<double> > data = 
+        {
+            {0.123, 3.54}, {345., -127.}, {1e-5, 1e-2},
+            {0.789, 4.59}, {10.1, 7.891}, {678., 1.e8},
+            {5.291, 5.78}, {0.02, 7.101}, {8.87, 12.4}
+        };
+    auto mat = matrix::cmat(data);
+    auto hmat = matrix::herm(mat);
+    BOOST_CHECK_CLOSE(hmat.at(2, 1).imag(), -1.e8, 1.e-4);
+    BOOST_CHECK_CLOSE(hmat.at(1, 2).imag(), 1.e8, 1.e-4);
+    BOOST_CHECK_CLOSE(hmat.at(2, 1).real(), 678., 1.e-4);
+    BOOST_CHECK_CLOSE(hmat.at(1, 2).real(), 678., 1.e-4);
+    BOOST_CHECK_CLOSE(hmat.at(2, 2).real(), 8.87, 1.e-4);
+    BOOST_CHECK_CLOSE(hmat.at(2, 2).imag(), 0., 1.e-4);
+}
+
+BOOST_AUTO_TEST_CASE(GeMM)
+{
+    std::vector< std::complex<double> > a = 
+        {
+            {1., 2.}, {3., 4.},
+            {5., 6.}, {7., 8.}
+        };
+    std::vector< std::complex<double> > b = 
+        {
+            {11., 12.}, {13., 14.},
+            {15., 16.}, {17., 18.}
+        };
+    auto    am = matrix::cmat(a),
+            bm = matrix::cmat(b);
+    auto    cm = am * bm;
+    BOOST_CHECK_CLOSE(cm.at(0, 0).real(), -32., 1.e-2);
+    BOOST_CHECK_CLOSE(cm.at(0, 0).imag(), 142., 1.e-2);
+    BOOST_CHECK_CLOSE(cm.at(1, 0).real(), -40., 1.e-2);
+    BOOST_CHECK_CLOSE(cm.at(1, 0).imag(), 358., 1.e-2);
+    BOOST_CHECK_CLOSE(cm.at(1, 1).real(), -44., 1.e-2);
+    BOOST_CHECK_CLOSE(cm.at(1, 1).imag(), 410., 1.e-2);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
