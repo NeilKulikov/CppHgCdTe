@@ -6,6 +6,8 @@
 #include <algorithm>
 #include <cstdlib>
 #include <cstdio>
+#include <iostream>
+#include <memory>
 
 #include <gsl/gsl_blas.h>
 #include <gsl/gsl_matrix.h>
@@ -49,36 +51,44 @@ namespace matrix{
         return (greater * greater > in) ? smaller : greater;
     };
 
+    void dcmat(gsl_matrix_complex* inp){
+        if(inp != nullptr)
+            gsl_matrix_complex_free(inp);
+    };
+
     class cmat{
         protected:
-            bool owner = true;
             std::size_t msiz = 0;
-            gsl_matrix_complex* matr= nullptr;
+            std::shared_ptr<gsl_matrix_complex> matr = nullptr;
+            std::shared_ptr<gsl_matrix_complex> alloc(std::size_t s) const {
+                return std::shared_ptr<gsl_matrix_complex>
+                    (gsl_matrix_complex_alloc(msiz, msiz), dcmat);
+            };
             void force_assign(double* data){
-                owner = false;
-                std::free(reinterpret_cast<void*>(matr->block->data));
-                matr->block->data = data;
-                matr->data = data;
+                auto gb = new gsl_block_complex{ msiz, data };
+                auto gm = new gsl_matrix_complex;
+                *gm = *matr;
+                gm->data = data;
+                gm->block = gb;
+                matr.~shared_ptr();
+                matr = std::shared_ptr<gsl_matrix_complex>(gm);
             };
             gsl_matrix_complex* raw(){
-                return matr;
+                return matr.get();
             };
         public:
             cmat(std::size_t size){
                 msiz = size;
-                matr = gsl_matrix_complex_alloc(size, size);
+                matr = alloc(size);
             };
-            cmat(std::size_t size, std::complex<double> fill_value){
-                msiz = size;
-                matr = gsl_matrix_complex_alloc(size, size);
-                gsl_matrix_complex_set_all(matr, to_gsl_complex(fill_value));
-            };
-            cmat(cmat& inp) : owner(false), matr(inp.raw()), msiz(inp.size()){};
+            cmat(std::size_t size, std::complex<double> fill_value) : cmat(size)
+                { gsl_matrix_complex_set_all(matr.get(), to_gsl_complex(fill_value)); };
+            cmat(cmat& inp) : matr(inp.matr), msiz(inp.size()){ };
             cmat(std::vector< std::complex<double> >& inp){
                 msiz = static_cast<std::size_t>(sqrt(inp.size()));
                 if(msiz * msiz != inp.size())
                     throw std::logic_error("Size of input vector should be square of integer number");
-                matr = gsl_matrix_complex_alloc(msiz, msiz);
+                matr = alloc(msiz);
                 force_assign(reinterpret_cast<double*>(inp.data()));
             };
             cmat(std::vector<double>& inp){
@@ -87,20 +97,17 @@ namespace matrix{
                 if(2 * msiz * msiz != inp.size())
                     throw std::logic_error("Size of input vector" 
                         " should be 2 square of integer number");
-                matr = gsl_matrix_complex_alloc(msiz, msiz);
+                matr = alloc(msiz);
                 force_assign(inp.data());
             };
             gsl_complex& at_gsl(std::size_t const i, std::size_t const j){
-                return *gsl_matrix_complex_ptr(matr, i, j);
+                return *gsl_matrix_complex_ptr(matr.get(), i, j);
             };
             std::complex<double>& at(std::size_t const i, std::size_t const j){
                 return reinterpret_cast<std::complex<double>&>(at_gsl(i,j));
             };
             std::size_t size() const {
                 return msiz;
-            }; 
-            ~cmat(void){
-                if(owner) gsl_matrix_complex_free(matr);
             };
             static void gemm(  
                 cmat& a, 

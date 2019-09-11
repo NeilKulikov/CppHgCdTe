@@ -1,10 +1,12 @@
 #ifndef INTEGRATE
 #define INTEGRATE
 
+#include <list>
 #include <utility>
 #include <numeric>
-#include <functional>
+#include <complex>
 #include <iostream>
+#include <functional>
 
 #include <gsl/gsl_integration.h>
 
@@ -55,6 +57,29 @@ namespace staff{
     };
 
     template<typename F = double, typename X = double>
+    std::pair<std::complex<F>, double> 
+    integrate_qag(
+        std::function<std::complex<F>(X)>& func, 
+        std::pair<X, X> lims,
+        gsl_integration_workspace* ws = nullptr,
+        std::size_t max_eval = 4096,
+        int ir = GSL_INTEG_GAUSS21,
+        double eps_abs = 1.e-8, 
+        double eps_rel = 1.e-5){
+            bool ext_ws = (ws != nullptr);
+            ws = ext_ws ? ws : gsl_integration_workspace_alloc(max_eval);
+            std::function<F(X)> rfunc = [&](X x){ return func(x).real(); },
+                                ifunc = [&](X x){ return func(x).imag(); };
+            auto    rres = integrate_qag(rfunc, lims, ws, max_eval, ir, eps_abs, eps_rel),
+                    ires = integrate_qag(ifunc, lims, ws, max_eval, ir, eps_abs, eps_rel);
+            if(!ext_ws) gsl_integration_workspace_free(ws);
+            return std::make_pair(
+                    std::complex<F>(rres.first, ires.first), 
+                    rres.second + ires.second);
+    };
+
+
+    template<typename F = double, typename X = double>
     std::pair<F, double> integrate_qags(
         std::function<F(X)>& func, 
         std::pair<X, X> lims,
@@ -79,7 +104,6 @@ namespace staff{
             if(!ext_ws) gsl_integration_workspace_free(ws);
             return std::make_pair(static_cast<F>(ret_val), ret_err);
     };
-
 };
 
 #endif

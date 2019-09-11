@@ -2,8 +2,9 @@
 #define BOOST_TEST_MODULE Integrator
 #include <boost/test/unit_test.hpp>
 
-#include <iostream>
 #include <cmath>
+#include <complex>
+#include <iostream>
 
 #include <integrate.hpp>
 
@@ -39,6 +40,16 @@ BOOST_AUTO_TEST_CASE(Integrate_s_signx)
     auto rv = staff::integrate_qag(func, std::pair<double, double>(-10., 5.));
     BOOST_CHECK_CLOSE(rv.first, -5., 1.e-3);
     BOOST_CHECK_LE(rv.second, 1.e-4);
+}
+
+BOOST_AUTO_TEST_CASE(Integrate_cexp)
+{
+    using namespace std::complex_literals;
+    std::function<std::complex<double>(double)> func = [](double x){ return std::exp(1i * x); };
+    auto rv = staff::integrate_qag(func, std::pair<double, double>(-10., 5.));
+    BOOST_CHECK_CLOSE(rv.first.real(), -1.50295, 1.e-3);
+    BOOST_CHECK_CLOSE(rv.first.imag(), -1.12273, 1.e-3);
+    BOOST_CHECK_LE(rv.second, 1.e-3);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
