@@ -1,5 +1,5 @@
 #define BOOST_TEST_DYN_LINK
-#define BOOST_TEST_MODULE Integrator
+#define BOOST_TEST_MODULE Matrices
 #include <boost/test/unit_test.hpp>
 
 #include <iostream>
@@ -153,6 +153,152 @@ BOOST_AUTO_TEST_CASE(GeMM)
     BOOST_CHECK_CLOSE(cm.at(1, 0).imag(), 358., 1.e-2);
     BOOST_CHECK_CLOSE(cm.at(1, 1).real(), -44., 1.e-2);
     BOOST_CHECK_CLOSE(cm.at(1, 1).imag(), 410., 1.e-2);
+}
+
+BOOST_AUTO_TEST_CASE(Sum)
+{
+    std::vector< std::complex<double> > a = 
+        {
+            {1., 2.}, {3., 4.},
+            {5., 6.}, {7., 8.}
+        };
+    std::vector< std::complex<double> > b = 
+        {
+            {11., 12.}, {14., -14.},
+            {15., 16.}, {17., 18.}
+        };
+    auto    am = matrix::cmat(a),
+            bm = matrix::cmat(b);
+    auto    cm = am + bm;
+    BOOST_CHECK_CLOSE(cm.at(0, 0).real(), 12., 1.e-2);
+    BOOST_CHECK_CLOSE(cm.at(0, 0).imag(), 14., 1.e-2);
+    BOOST_CHECK_CLOSE(cm.at(0, 1).real(), 17., 1.e-2);
+    BOOST_CHECK_CLOSE(cm.at(0, 1).imag(), -10., 1.e-2);
+    auto    dm = bm - am;
+    BOOST_CHECK_CLOSE(dm.at(0, 0).real(), 10., 1.e-2);
+    BOOST_CHECK_CLOSE(dm.at(0, 0).imag(), 10., 1.e-2);
+    BOOST_CHECK_CLOSE(dm.at(0, 1).real(), 11., 1.e-2);
+    BOOST_CHECK_CLOSE(dm.at(0, 1).imag(), -18., 1.e-2);
+}
+
+BOOST_AUTO_TEST_CASE(Scale)
+{
+    std::vector< std::complex<double> > a = 
+        {
+            {1., 2.}, {3., 4.},
+            {5., 6.}, {7., 8.}
+        };
+    auto am = matrix::cmat(a);
+    std::complex<double> b = {3., -6.};
+    auto dm = am * b;
+    BOOST_CHECK_CLOSE(dm.at(0, 0).real(), 15., 1.e-2);
+    BOOST_CHECK_LE(dm.at(0, 0).imag(), 1.e-3);
+    BOOST_CHECK_CLOSE(dm.at(0, 1).real(), 33., 1.e-2);
+    BOOST_CHECK_CLOSE(dm.at(0, 1).imag(), -6., 1.e-2);
+    BOOST_CHECK_CLOSE(dm.at(1, 1).real(), 69., 1.e-2);
+    BOOST_CHECK_CLOSE(dm.at(1, 1).imag(), -18., 1.e-2);
+}
+
+BOOST_AUTO_TEST_CASE(HDiag)
+{
+    std::vector< std::complex<double> > a = 
+        {
+            {1., 0.}, {3., 4.},
+            {3., -4.}, {7., 0.}
+        };
+    auto am = matrix::cmat(a);
+    auto ah = matrix::herm(am);
+    auto ev = ah.diagonalize();
+    std::cout << ev[0] << ' ' << ev[1] << std::endl;
+    BOOST_CHECK_CLOSE(ev[0], -1.83095, 1.e-2);
+    BOOST_CHECK_CLOSE(ev[1],  9.83095, 1.e-2);
+}
+
+BOOST_AUTO_TEST_CASE(HDiag2)
+{
+    std::vector< std::complex<double> > a = 
+        {
+            {8., 0.}, {3., 4.}, {9., -6.},
+            {3., -4.}, {7., 0.}, {5., 4.},
+            {9., 6.}, {5., -4.}, {1., 0.}
+        };
+    auto am = matrix::cmat(a);
+    auto ah = matrix::herm(am);
+    auto ev = ah.diagonalize();
+    BOOST_CHECK_CLOSE(ev[0], -10.0743, 1.e-2);
+    BOOST_CHECK_CLOSE(ev[1],  8.64547, 1.e-2);
+    BOOST_CHECK_CLOSE(ev[2],  17.4288, 1.e-2);
+}
+
+BOOST_AUTO_TEST_CASE(Sub)
+{
+    std::vector< std::complex<double> > a = 
+        {
+            {1., 0.}, {3., 9.},
+            {3., 12.}, {7., 67.}
+        };
+    std::vector< std::complex<double> > b = 
+        {
+            {34., 56.}, {419., 5.},
+            {35., 14.}, {217., -187.}
+        };
+    auto    am = matrix::cmat(a),
+            bm = matrix::cmat(b);
+    auto    cm = bm - am;
+    BOOST_CHECK_CLOSE(cm.at(0, 0).real(), 33., 1.e-2);
+    BOOST_CHECK_CLOSE(cm.at(0, 0).imag(), 56., 1.e-2);
+    BOOST_CHECK_CLOSE(cm.at(0, 1).imag(), -4., 1.e-2);
+    BOOST_CHECK_CLOSE(cm.at(0, 1).real(), 416., 1.e-2);
+    BOOST_CHECK_CLOSE(cm.at(1, 1).real(), 210., 1.e-2);
+    BOOST_CHECK_CLOSE(cm.at(1, 1).imag(), -254., 1.e-2);
+}
+
+BOOST_AUTO_TEST_CASE(Add)
+{
+    std::vector< std::complex<double> > a = 
+        {
+            {1., 0.}, {3., 9.},
+            {3., 12.}, {7., 67.}
+        };
+    std::vector< std::complex<double> > b = 
+        {
+            {34., 56.}, {419., 5.},
+            {35., 14.}, {217., -187.}
+        };
+    auto    am = matrix::cmat(a),
+            bm = matrix::cmat(b);
+    auto    cm = bm + am;
+    BOOST_CHECK_CLOSE(cm.at(0, 0).real(), 35., 1.e-2);
+    BOOST_CHECK_CLOSE(cm.at(0, 0).imag(), 56., 1.e-2);
+    BOOST_CHECK_CLOSE(cm.at(0, 1).imag(), 14., 1.e-2);
+    BOOST_CHECK_CLOSE(cm.at(0, 1).real(), 422., 1.e-2);
+    BOOST_CHECK_CLOSE(cm.at(1, 1).real(), 224., 1.e-2);
+    BOOST_CHECK_CLOSE(cm.at(1, 1).imag(), -120., 1.e-2);
+}
+
+BOOST_AUTO_TEST_CASE(Copy)
+{
+    std::vector< std::complex<double> > a = 
+        {
+            {1., 0.}, {3., 9.},
+            {3., 12.}, {7., 67.}
+        };
+    auto    am = matrix::cmat(a);
+    BOOST_CHECK_CLOSE(am.at(0, 0).real(), 1., 1.e-2);
+    BOOST_CHECK_CLOSE(am.at(0, 1).imag(), 9., 1.e-2);
+    BOOST_CHECK_CLOSE(am.at(1, 1).imag(), 67., 1.e-2);
+    auto    bm = matrix::cmat::copy(am);
+    BOOST_CHECK_CLOSE(bm.at(0, 0).real(), 1., 1.e-2);
+    BOOST_CHECK_CLOSE(bm.at(0, 1).imag(), 9., 1.e-2);
+    BOOST_CHECK_CLOSE(bm.at(1, 1).imag(), 67., 1.e-2);
+    am.at(0, 0) = {5., 7.};
+    am.at(1, 1) = {-5., -1.e8};
+    BOOST_CHECK_CLOSE(am.at(0, 0).real(), 5., 1.e-2);
+    BOOST_CHECK_CLOSE(am.at(1, 1).real(), -5., 1.e-2);
+    BOOST_CHECK_CLOSE(am.at(1, 1).imag(), -1.e8, 1.e-2);
+    BOOST_CHECK_CLOSE(bm.at(0, 0).real(), 1., 1.e-2);
+    BOOST_CHECK_CLOSE(bm.at(0, 1).imag(), 9., 1.e-2);
+    BOOST_CHECK_CLOSE(bm.at(1, 1).imag(), 67., 1.e-2);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

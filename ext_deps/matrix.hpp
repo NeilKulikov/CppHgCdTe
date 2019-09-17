@@ -10,6 +10,7 @@
 #include <memory>
 
 #include <gsl/gsl_blas.h>
+#include <gsl/gsl_eigen.h>
 #include <gsl/gsl_matrix.h>
 #include <gsl/gsl_linalg.h>
 #include <gsl/gsl_complex.h>
@@ -56,13 +57,16 @@ namespace matrix{
             gsl_matrix_complex_free(inp);
     };
 
+    class herm;
+
     class cmat{
+        friend herm;
         protected:
             std::size_t msiz = 0;
             std::shared_ptr<gsl_matrix_complex> matr = nullptr;
             std::shared_ptr<gsl_matrix_complex> alloc(std::size_t s) const {
                 return std::shared_ptr<gsl_matrix_complex>
-                    (gsl_matrix_complex_alloc(msiz, msiz), dcmat);
+                    (gsl_matrix_complex_calloc(s, s), dcmat);
             };
             void force_assign(double* data){
                 auto gb = new gsl_block_complex{ msiz, data };
@@ -77,19 +81,35 @@ namespace matrix{
                 return matr.get();
             };
         public:
-            cmat(std::size_t size){
+            gsl_matrix_complex const * raw_const() const {
+                return matr.get();
+            };
+            cmat(std::size_t size = 1){
                 msiz = size;
                 matr = alloc(size);
             };
             cmat(std::size_t size, std::complex<double> fill_value) : cmat(size)
                 { gsl_matrix_complex_set_all(matr.get(), to_gsl_complex(fill_value)); };
-            cmat(cmat& inp) : matr(inp.matr), msiz(inp.size()){ };
+            cmat(cmat& inp) : msiz(inp.size()), matr(inp.matr){ };
             cmat(std::vector< std::complex<double> >& inp){
                 msiz = static_cast<std::size_t>(sqrt(inp.size()));
                 if(msiz * msiz != inp.size())
                     throw std::logic_error("Size of input vector should be square of integer number");
                 matr = alloc(msiz);
                 force_assign(reinterpret_cast<double*>(inp.data()));
+            };
+            static cmat diagonal(std::vector< std::complex<double> >& in){
+                cmat rv(in.size(), 0.);
+                auto g_inpv = gsl_vector_complex_view_array(
+                    reinterpret_cast<double*>(in.data()), in.size());
+                auto d_view = gsl_matrix_complex_diagonal(rv.raw());
+                gsl_vector_complex_memcpy(&d_view.vector, &g_inpv.vector);
+                return rv;
+            };
+            static cmat copy(cmat const & in){
+                cmat rv(in.size(), 0.);
+                gsl_matrix_complex_memcpy(rv.raw(), in.raw_const());
+                return rv;
             };
             cmat(std::vector<double>& inp){
                 std::size_t rsiz = inp.size() / 2;
@@ -106,15 +126,18 @@ namespace matrix{
             std::complex<double>& at(std::size_t const i, std::size_t const j){
                 return reinterpret_cast<std::complex<double>&>(at_gsl(i,j));
             };
+            std::complex<double>& at(const std::pair<std::size_t, std::size_t> ij){
+                return at(ij.first, ij.second);
+            };
             std::size_t size() const {
                 return msiz;
             };
             static void gemm(  
-                cmat& a, 
-                cmat& b,
+                cmat const & a, 
+                cmat const & b,
                 cmat& c,
-                std::complex<double> alpha = {1., 0.}, 
-                std::complex<double> beta  = {0., 0.},
+                const std::complex<double> alpha = {1., 0.}, 
+                const std::complex<double> beta  = {0., 0.},
                 CBLAS_TRANSPOSE_t tra = CblasNoTrans,
                 CBLAS_TRANSPOSE_t trb = CblasNoTrans){
                     const auto  gsl_a = to_gsl_complex(alpha),
@@ -123,17 +146,49 @@ namespace matrix{
                         tra,
                         trb,
                         gsl_a,
-                        a.raw(),
-                        b.raw(),
+                        a.raw_const(),
+                        b.raw_const(),
                         gsl_b,
                         c.raw());
                 };
-            cmat operator*(cmat& a){
+            cmat operator*(cmat const & a) const {
                 if(size() != a.size())
                     throw std::length_error("Invalid size of matrices");
-                auto rv = cmat(size(), {0., 0.});
+                auto rv = cmat(size());
                 gemm(*this, a, rv);
                 return rv;
+            };
+            cmat operator+(cmat const & a) const {
+                if(size() != a.size())
+                    throw std::length_error("Invalid size of matrices");
+                auto rv = cmat(size());
+                gsl_matrix_complex_memcpy(rv.raw(), raw_const());
+                gsl_matrix_complex_add(rv.raw(), a.raw_const());
+                return rv;
+            };
+            cmat operator-(cmat const & a) const {
+                if(size() != a.size())
+                    throw std::length_error("Invalid size of matrices");
+                auto rv = cmat(size());
+                gsl_matrix_complex_memcpy(rv.raw(), raw_const());
+                gsl_matrix_complex_sub(rv.raw(), a.raw_const());
+                return rv;
+            };
+            cmat operator*(std::complex<double> const & a){
+                auto rv = cmat(size());
+                gsl_matrix_complex_memcpy(rv.raw(), raw_const());
+                gsl_matrix_complex_scale(rv.raw(), 
+                                        to_gsl_complex(a));
+                return rv;
+            };
+            void print(void){
+                for(std::size_t i = 0; i < msiz; i++){
+                    for(std::size_t j = 0; j < msiz; j++){
+                        std::cout << '(' << i << ',' << j 
+                            << ") " << at(i, j) << '\t';
+                    }
+                    std::cout << std::endl;
+                }
             };
     };
 
@@ -143,15 +198,15 @@ namespace matrix{
                 cmat(inp){
                     if(!trust) make_herm();
                     if(!check())
-                        throw std::logic_error("Not hermetian");
+                        throw std::logic_error("Not hermitian");
             };
             herm(herm& inp) : cmat(inp){};
-            bool check(double rtol = 1.e-4){
+            bool check(double atol = 1.e-4){
                 bool rv = true;
                 for(std::size_t r = 0; r < msiz; r++){
                     for(std::size_t c = r; c < msiz; c++){
                         auto dif = at(r, c) - std::conj(at(c, r));
-                        rv &= (abs(dif) / abs(at(r, c))) < rtol;
+                        rv &= (abs(dif)) < atol;
                     }
                 }
                 return rv;
@@ -164,6 +219,19 @@ namespace matrix{
                         at(c, r) = std::conj(at(r, c));
                     }
                 }
+            };
+            std::vector<double> diagonalize(
+                gsl_eigen_herm_workspace* ws = nullptr){
+                    bool owner = (ws == nullptr);
+                    ws = owner ? gsl_eigen_herm_alloc(size()) : ws;
+                    std::vector<double> evals(size());
+                    auto gsl_evals = 
+                        gsl_vector_view_array(evals.data(), size());
+                    gsl_eigen_herm(raw(), &gsl_evals.vector, ws);
+                    if(owner)
+                        gsl_eigen_herm_free(ws);
+                    std::sort(evals.begin(), evals.end());
+                    return evals;
             };
     };
 };

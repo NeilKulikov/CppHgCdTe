@@ -20,11 +20,11 @@ SET (CMAKE_ARCHIVE_OUTPUT_DIRECTORY
     )
 
 set (CMAKE_CXX_STANDARD 17)
+set (CMAKE_CXX_FLAGS "-O3 -Wall -Wextra")
 
 enable_testing()
 
 find_package(Boost REQUIRED)
-
 find_package(GSL REQUIRED)
 
 include_directories(ext_deps)

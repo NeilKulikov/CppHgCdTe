@@ -39,7 +39,7 @@ BOOST_AUTO_TEST_CASE(Integrate_s_signx)
     std::function<double(double)> func = [](double x){ return (x > 0.) ? 1. : -1.; };
     auto rv = staff::integrate_qag(func, std::pair<double, double>(-10., 5.));
     BOOST_CHECK_CLOSE(rv.first, -5., 1.e-3);
-    BOOST_CHECK_LE(rv.second, 1.e-4);
+    BOOST_CHECK_LE(rv.second, 1.e-3);
 }
 
 BOOST_AUTO_TEST_CASE(Integrate_cexp)
@@ -49,6 +49,16 @@ BOOST_AUTO_TEST_CASE(Integrate_cexp)
     auto rv = staff::integrate_qag(func, std::pair<double, double>(-10., 5.));
     BOOST_CHECK_CLOSE(rv.first.real(), -1.50295, 1.e-3);
     BOOST_CHECK_CLOSE(rv.first.imag(), -1.12273, 1.e-3);
+    BOOST_CHECK_LE(rv.second, 1.e-3);
+}
+
+BOOST_AUTO_TEST_CASE(Integrate_cfunc)
+{
+    using namespace std::complex_literals;
+    std::function<std::complex<double>(double)> func = [](double x){ return (1.i +  x) * x; };
+    auto rv = staff::integrate_qag(func, std::pair<double, double>(-1., 25.));
+    BOOST_CHECK_CLOSE(rv.first.real(), 5208.67, 1.e-3);
+    BOOST_CHECK_CLOSE(rv.first.imag(), 312., 1.e-3);
     BOOST_CHECK_LE(rv.second, 1.e-3);
 }
 

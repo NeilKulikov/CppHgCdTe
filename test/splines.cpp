@@ -1,5 +1,5 @@
 #define BOOST_TEST_DYN_LINK
-#define BOOST_TEST_MODULE Integrator
+#define BOOST_TEST_MODULE Splines
 #include <boost/test/unit_test.hpp>
 
 #include <iostream>

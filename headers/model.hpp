@@ -2,31 +2,35 @@
 #define MODEL
 
 #include <vector>
+#include <iostream>
 #include <algorithm>
 #include <exception>
 
 #include <spline.hpp>
 
 namespace materials{
+
+    template<typename T = double>
     struct model{
-        double Eg;
-        double Es;
-        double Ep;
-        double G1;
-        double G2;
-        double G3;
-        double F;
-        double K;
+        T Eg;
+        T Es;
+        T Ep;
+        T VBO;
+        T G1;
+        T G2;
+        T G3;
+        T F;
+        T K;
     };
 
-    const static model CdTe = {1.606, 0.91, 18.8, 1.47, -0.28, 0.03, -0.09, -1.31};
-    const static model HgTe = {-0.303, 1.08, 18.8, 4.1, 0.5, 1.3, 0., -0.4};
+    const static model<double> CdTe = {1.606, 0.91, 18.8, -0.57, 1.47, -0.28, 0.03, -0.09, -1.31};
+    const static model<double> HgTe = {-0.303, 1.08, 18.8, 0., 4.1, 0.5, 1.3, 0., -0.4};
 
     inline double lin(double a, double b, double x){
         return a * x + b * (1. - x);
     }
 
-    model CdHgTe(double x){
+    model<double> CdHgTe(double x){
         if(!((0. <= x) && (x <= 1.)))
             throw std::domain_error("x should be in range [0;1]");
         double Eg = 1.606 * x - 0.303 * (1. - x) - 0.132 * x * (1. - x);
@@ -34,6 +38,7 @@ namespace materials{
                     Eg,
                     lin(CdTe.Es, HgTe.Es, x),
                     lin(CdTe.Ep, HgTe.Ep, x),
+                    lin(CdTe.VBO, HgTe.VBO, x),
                     lin(CdTe.G1, HgTe.G1, x),
                     lin(CdTe.G2, HgTe.G2, x),
                     lin(CdTe.G3, HgTe.G3, x),
@@ -65,15 +70,16 @@ namespace materials{
             double length(void) const {
                 return len;
             };
-            double composition(double z){
+            double composition(double z) const {
                 if(!((0. <= z) && (z <= len)))
                     throw std::out_of_range("z should be in interval [0;L]");
+                    //std::cout << z << std::endl;
                 return spl->eval(z);
             };
-            model at(double z){
+            model<double> at(double z) const {
                 double comp = composition(z);
                 auto rv = CdHgTe(comp);
-                return std::move(rv);
+                return rv;
             };
             
     };
