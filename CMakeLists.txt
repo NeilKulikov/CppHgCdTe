@@ -31,3 +31,4 @@ include_directories(ext_deps)
 include_directories(headers)
 
 add_subdirectory( test build/test )
+add_subdirectory( interop build/interop )
