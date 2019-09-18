@@ -54,4 +54,54 @@ BOOST_AUTO_TEST_CASE(hcore_compl)
     BOOST_CHECK_CLOSE(hc.Eg->at(1, 10).real(), -0.00280413, 5.);
 }
 
+BOOST_AUTO_TEST_CASE(hcore_inst)
+{
+    const int len = 101;
+    const int bsi = 5;
+    std::vector<double> xs(len), ys(len);
+    for(int i = 0; i < len; i++){
+        xs[i] = 0.1 * i;
+        ys[i] = 0.5 + 0.25 * std::sin(xs[i]);
+    }
+    materials::heterostruct hs(xs, ys);
+    BOOST_CHECK_CLOSE(hs.length(), 10., 1.e-4);
+    hamiltonian::hcore hc(hs, bsi);
+    std::pair<double, double> kxky{1., 0.};
+    std::pair<std::size_t, std::size_t> ij{2, 3};
+    auto ins = hc.get_hblock(kxky, ij);
+    //ins.print();
+}
+
+BOOST_AUTO_TEST_CASE(hcore_solid)
+{
+    const int len = 101;
+    const int bsi = 11;
+    std::vector<double> xs(len), ys(len);
+    for(int i = 0; i < len; i++){
+        xs[i] = 0.1 * i;
+        ys[i] = 0.5 + 0.00005 * std::sin(xs[i]);
+    }
+    materials::heterostruct hs(xs, ys);
+    BOOST_CHECK_CLOSE(hs.length(), 10., 1.e-4);
+    hamiltonian::hcore hc(hs, bsi);
+    std::pair<double, double> kxky{0.5, 0.};
+    std::pair<std::size_t, std::size_t> ij{3, 3};
+    auto ins = hc.get_hblock(kxky, ij);
+    //ins.print();
+}
+
+BOOST_AUTO_TEST_CASE(hcore_full)
+{
+    std::vector<double> xs = 
+        { 0.0, 9.5, 10.1, 14.9, 15.5, 20. };
+    std::vector<double> ys = 
+        { 0.7,   0.7,    0.1,    0.1,    0.7, 0.7 };
+    materials::heterostruct hs(xs, ys);
+    hamiltonian::hcore hc(hs);
+    std::pair<double, double> kxky{0.5, 0.};
+    auto full = hc.full_h(kxky);
+    BOOST_CHECK_CLOSE(hs.composition(12.5), 0.1, 1.e-2);
+    //full.print();
+}
+
 BOOST_AUTO_TEST_SUITE_END()

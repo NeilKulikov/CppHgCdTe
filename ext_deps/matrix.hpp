@@ -190,6 +190,13 @@ namespace matrix{
                     std::cout << std::endl;
                 }
             };
+            void put_submatrix(cmat& inp,
+                const std::pair<std::size_t, std::size_t> ij){
+                    auto curv = gsl_matrix_complex_submatrix(raw(), 
+                        ij.first, ij.second, inp.size(), inp.size());
+                    const auto inpv = inp.raw_const();
+                    gsl_matrix_complex_memcpy(&curv.matrix, inpv);
+            }
     };
 
     class herm : public cmat{

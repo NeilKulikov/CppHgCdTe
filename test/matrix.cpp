@@ -230,6 +230,36 @@ BOOST_AUTO_TEST_CASE(HDiag2)
     BOOST_CHECK_CLOSE(ev[2],  17.4288, 1.e-2);
 }
 
+BOOST_AUTO_TEST_CASE(MSub)
+{
+    std::vector< std::complex<double> > a = 
+        {
+            {8., -9.}, {3., 4.}, {9., -6.},
+            {3., -4.}, {7., 5.}, {5., 4.},
+            {9., 6.}, {5., -4.}, {1., 17.}
+        };
+    std::vector< std::complex<double> > b = 
+        {
+            {123., 345.}, {789., -327.},
+            {890., -1.},  {512., 314.}
+        };
+    auto    am = matrix::cmat(a),
+            bm = matrix::cmat(b);
+    BOOST_CHECK_CLOSE(am.at(0, 0).real(), 8., 1.e-2);
+    BOOST_CHECK_CLOSE(am.at(2, 2).imag(), 17., 1.e-2);
+    BOOST_CHECK_CLOSE(am.at(2, 0).imag(), 6., 1.e-2);
+    BOOST_CHECK_CLOSE(am.at(1, 2).imag(), 4., 1.e-2);
+    BOOST_CHECK_CLOSE(am.at(1, 1).real(), 7., 1.e-2);
+    am.put_submatrix(bm, {0, 0});
+    am.print();
+    BOOST_CHECK_CLOSE(am.at(0, 0).real(), 123., 1.e-2);
+    BOOST_CHECK_CLOSE(am.at(0, 0).imag(), 345., 1.e-2);
+    BOOST_CHECK_CLOSE(am.at(2, 2).imag(), 17., 1.e-2);
+    BOOST_CHECK_CLOSE(am.at(2, 0).imag(), 6., 1.e-2);
+    BOOST_CHECK_CLOSE(am.at(1, 2).imag(), 4., 1.e-2);
+    BOOST_CHECK_CLOSE(am.at(1, 1).real(), 512., 1.e-2);
+}
+
 BOOST_AUTO_TEST_CASE(Sub)
 {
     std::vector< std::complex<double> > a = 
