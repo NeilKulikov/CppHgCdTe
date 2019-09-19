@@ -5,3 +5,4 @@
 
 /build/*
 /.vscode/*
+/interop/bindings/.ipynb_checkpoints
