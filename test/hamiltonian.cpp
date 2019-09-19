@@ -98,8 +98,12 @@ BOOST_AUTO_TEST_CASE(hcore_full)
         { 0.7,   0.7,    0.1,    0.1,    0.7, 0.7 };
     materials::heterostruct hs(xs, ys);
     hamiltonian::hcore hc(hs);
-    std::pair<double, double> kxky{0.5, 0.};
-    auto full = hc.full_h(kxky);
+    std::pair<double, double>   kxky1{0.5, 0.},
+                                kxky2{0.3, 0.};
+    auto    f1 = hc.full_h(kxky1),
+            f2 = hc.full_h(kxky2);
+    auto    df = f1 - f2;
+    //df.print();
     BOOST_CHECK_CLOSE(hs.composition(12.5), 0.1, 1.e-2);
     //full.print();
 }

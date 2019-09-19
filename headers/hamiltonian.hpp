@@ -247,7 +247,7 @@ namespace hamiltonian{
                     std::size_t i = r * 8;
                     for(std::size_t c = r; c < bsize; c++){
                         std::size_t j = c * 8;
-                        auto ham = get_hblock(kxky, {r, c});
+                        auto ham = get_hblock({r, c}, kxky);
                         rv.put_submatrix(ham, {i, j});
                     }
                 }
