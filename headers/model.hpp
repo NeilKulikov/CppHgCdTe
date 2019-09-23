@@ -23,8 +23,8 @@ namespace materials{
         T K;
     };
 
-    const static model<double> CdTe = {1.606, 0.91, 18.8, -0.57, 1.47, -0.28, 0.03, -0.09, -1.31};
-    const static model<double> HgTe = {-0.303, 1.08, 18.8, 0., 4.1, 0.5, 1.3, 0., -0.4};
+    const static model<double> CdTe = { 1.606, 0.91,  18.8, -0.57, 1.47, -0.28, 0.03, -0.09, -1.31};
+    const static model<double> HgTe = {-0.303, 1.08,  18.8, 0.,    4.1,  0.5,   1.3,  0.,    -0.4};
 
     inline double lin(double a, double b, double x){
         return a * x + b * (1. - x);

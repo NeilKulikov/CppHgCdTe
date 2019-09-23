@@ -1,4 +1,5 @@
 #include <vector>
+#include <fstream>
 #include <iostream>
 #include <exception>
 
@@ -44,6 +45,14 @@ double* gen_eigen(void* hinst){
     return rv;
 };
 
+void print_hinst(void* hinst, char* name){
+    std::fstream fs;
+    fs.open(name, std::fstream::out);
+    auto hi = reinterpret_cast<matrix::herm*>(hinst);
+    hi->print(fs);
+    fs.close();
+};
+
 int make_model_c(void** rv, size_t n, double* zs, double* xs){
     try{
         *rv = make_model(n, zs, xs);
@@ -81,10 +90,5 @@ int gen_eigen_c(double** rv, void* hinst){
     };
 };
 
-char* say_hello(void){
-    char* ret_val = (char*) malloc(100);
-    for(char i = 1; i < 100; i++)
-        ret_val[i] = i;
-    return ret_val;
-};
+
 

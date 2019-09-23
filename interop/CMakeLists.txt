@@ -9,3 +9,5 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 add_library(interop SHARED ${lib_source})
 
 target_link_libraries(interop GSL::gsl)
+
+#file(COPY )

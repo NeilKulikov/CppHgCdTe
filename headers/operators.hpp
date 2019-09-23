@@ -6,6 +6,8 @@
 #include <algorithm>
 #include <functional>
 
+#include <iostream>
+
 #include <matrix.hpp>
 #include <integrate.hpp>
 
@@ -109,6 +111,7 @@ namespace operators{
             /*gsl_integration_workspace* ws = 
                 gsl_integration_workspace_alloc(max_eval);*/
             for(std::size_t i = 0; i < bsize; i++){
+                //std::cout << 2. * M_PI * static_cast<double>(i) / len << std::endl;
                 std::function< std::complex<double>(double) > igr =
                     std::bind(func, static_cast<int>(i), _1);
                 /*auto ires = staff::integrate_qag(
@@ -174,7 +177,7 @@ namespace operators{
         const double eps_rel = 1.e-4){
             using namespace std::complex_literals;
             std::function<std::complex<double>(double)> nfunc = 
-                [&](double x){ return inp(x) + 0.i; };
+                [&](double x){ return std::complex<double>(inp(x), 0.); };
             return pw_matr(nfunc, len, blims, max_eval, eps_abs, eps_rel);
     };
 };

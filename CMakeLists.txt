@@ -2,19 +2,19 @@ cmake_minimum_required(VERSION 2.6)
 project(CdHgTe)
 
 SET (CMAKE_LIBRARY_OUTPUT_DIRECTORY
-        ${PROJECT_BINARY_DIR}/bin
+        ${PROJECT_BINARY_DIR}/bin/lib
         CACHE PATH
         "Single Directory for all"
     )
 
 SET (CMAKE_RUNTIME_OUTPUT_DIRECTORY
-        ${PROJECT_BINARY_DIR}/bin
+        ${PROJECT_BINARY_DIR}/bin/run
         CACHE PATH
         "Single Directory for all"
     )
 
 SET (CMAKE_ARCHIVE_OUTPUT_DIRECTORY
-        ${PROJECT_BINARY_DIR}/lib
+        ${PROJECT_BINARY_DIR}/arch
         CACHE PATH
         "Single Directory for all"
     )

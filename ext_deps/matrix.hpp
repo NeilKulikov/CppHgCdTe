@@ -181,10 +181,10 @@ namespace matrix{
                                         to_gsl_complex(a));
                 return rv;
             };
-            void print(void){
+            void print(std::ostream & ost = std::cout){
                 for(std::size_t i = 0; i < msiz; i++){
                     for(std::size_t j = 0; j < msiz; j++){
-                        std::cout << '(' << i << ',' << j 
+                        ost << '(' << i << ',' << j 
                             << ") " << at(i, j) << '\t';
                     }
                     std::cout << std::endl;

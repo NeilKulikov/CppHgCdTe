@@ -1,5 +1,5 @@
 module HgCdTe
-    export Model, HCore, HInst, Eigens
+    export Model, HCore, HInst, Eigens, PrintIntoFile, Band
 
     using Libdl
 
@@ -8,6 +8,7 @@ module HgCdTe
     make_model = dlsym(libhgcdte, :make_model)
     make_hcore = dlsym(libhgcdte, :make_hcore)
     make_hinst = dlsym(libhgcdte, :make_hinst)
+    print_hinst = dlsym(libhgcdte, :print_hinst)
     gen_eigen = dlsym(libhgcdte, :gen_eigen)
 
     struct Model
@@ -43,11 +44,23 @@ module HgCdTe
             res = ccall(make_hinst, Ptr{Cvoid}, (Ptr{Cvoid}, Float64, Float64), hc.hc, k[1], k[2])
             HInst(hc.bs, res)
         end
+
+    PrintIntoFile(hi::HInst, fn::String) = 
+        begin
+            ccall(print_hinst, Cvoid, (Ptr{Cvoid}, Cstring), hi.hi, fn)
+        end
     
     Eigens(hi::HInst)::Array{Float64, 1} = 
         begin
             eig = ccall(gen_eigen, Ptr{Float64}, (Ptr{Cvoid}, ), hi.hi)
             res = unsafe_wrap(Array{Float64, 1}, eig, (8 * hi.bs, )) 
             res
+        end
+
+    Band(eigs::Array{Float64, 1}, num::Int64) = 
+        begin
+            len = length(eigs)
+            idx = div(len * 3, 4) + 2 * (num + 4)
+            eigs[idx]
         end
 end

@@ -33,7 +33,7 @@ namespace hamiltonian{
                 std::shared_ptr<matrix::herm> KzG1Kz = nullptr;
             protected:
                 double len = 0;
-                std::pair<int, int> blims;
+                std::pair<int, int> blims = {0, 1};
                 std::map< std::string, std::shared_ptr<matrix::herm>& > mapping =
                     {
                         {"Eg", Eg },
@@ -86,11 +86,12 @@ namespace hamiltonian{
                     std::vector< std::complex<double> > kzs(bsize);
                     std::generate(kzs.begin(), kzs.end(), 
                         [&, n = blims.first](void) mutable {
-                            double val = static_cast<double>(n++) * 2. * M_PI / len;
+                            double val = static_cast<double>(++n) * 2. * M_PI / len;
                             return std::complex<double>{val, 0.};
                         });
                     std::vector< std::complex<double> > ones(bsize, {1., 0.});
                     auto kzcmat = matrix::cmat::diagonal(kzs);
+                    //kzcmat.print();
                     Kz = std::shared_ptr<matrix::herm>(new matrix::herm(kzcmat));
                     auto _pmat = matrix::cmat::diagonal(ones) * 
                         std::complex<double>{std::sqrt(esk * materials::CdHgTe(0.5).Ep), 0.};
