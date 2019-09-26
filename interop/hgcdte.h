@@ -5,9 +5,11 @@
 
 extern "C"{
     void* make_model(size_t n, double* zs, double* xs);
+    int del_model(void* md);
     void* make_hcore(void* model, size_t bsize);
+    int del_hcore(void* hc);
     void* make_hinst(void* hcore, double kx, double ky);
-    void print_hinst(void* hinst, char* name);
+    int del_hinst(void* hc);
     double* gen_eigen(void* hinst);
     int make_model_c(void** rv, size_t n, double* zs, double* xs);
     int make_hcore_c(void** rv, void* model, size_t bsize);

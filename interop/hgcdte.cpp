@@ -19,10 +19,22 @@ void* make_model(size_t n, double* zs, double* xs){
     return reinterpret_cast<void*>(rv);
 };
 
+int del_model(void* md){
+    auto mp = reinterpret_cast<materials::heterostruct*>(md);
+    delete mp;
+    return 0;
+};
+
 void* make_hcore(void* model, size_t bsize, double accuracy){
     auto md = reinterpret_cast<materials::heterostruct*>(model);
     auto rv = new hamiltonian::hcore((*md), bsize, accuracy);
     return reinterpret_cast<void*>(rv);
+};
+
+int del_hcore(void* hc){
+    auto hp = reinterpret_cast<hamiltonian::hcore*>(hc);
+    delete hp;
+    return 0;
 };
 
 void* make_hcore(void* model, size_t bsize){
@@ -35,6 +47,12 @@ void* make_hinst(void* hcore, double kx, double ky){
     auto hf = hc->full_h(momentum);
     auto rv = new matrix::herm(hf);
     return reinterpret_cast<void*>(rv);
+};
+
+int del_hinst(void* hi){
+    auto hp = reinterpret_cast<matrix::herm*>(hi);
+    delete hp;
+    return 0;
 };
 
 double* gen_eigen(void* hinst){
