@@ -158,7 +158,7 @@ namespace operators{
         std::size_t max_eval = 16384,
         const double eps_abs = 0.,
         const double eps_rel = 1.e-2){
-            const int bs = blims.second - blims.first;
+            const int bs = blims.second - blims.first + 1;
             const std::size_t bsize = static_cast<std::size_t>(bs);
             if(bs <= 0)
                 throw std::length_error("Length of basis should be > 1");

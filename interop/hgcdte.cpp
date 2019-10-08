@@ -71,6 +71,17 @@ void print_hinst(void* hinst, char* name){
     fs.close();
 };
 
+double* get_matr(void* matr){
+    auto hi = reinterpret_cast<matrix::cmat*>(matr);
+    const auto size = hi->size();
+    auto rv = new std::complex<double>[size * size];
+    for(std::size_t r = 0; r < size; r++){
+        for(std::size_t c = 0; c < size; c++)
+            rv[r * size + c] = hi->at(r, c);
+    }
+    return reinterpret_cast<double*>(rv);
+};
+
 int make_model_c(void** rv, size_t n, double* zs, double* xs){
     try{
         *rv = make_model(n, zs, xs);

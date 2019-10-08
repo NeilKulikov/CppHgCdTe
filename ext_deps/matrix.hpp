@@ -140,6 +140,8 @@ namespace matrix{
                 const std::complex<double> beta  = {0., 0.},
                 CBLAS_TRANSPOSE_t tra = CblasNoTrans,
                 CBLAS_TRANSPOSE_t trb = CblasNoTrans){
+                    if(a.size() != b.size())
+                        throw std::length_error("Matrices should have equal size");
                     const auto  gsl_a = to_gsl_complex(alpha),
                                 gsl_b = to_gsl_complex(beta);
                     gsl_blas_zgemm(
@@ -184,8 +186,7 @@ namespace matrix{
             void print(std::ostream & ost = std::cout){
                 for(std::size_t i = 0; i < msiz; i++){
                     for(std::size_t j = 0; j < msiz; j++){
-                        ost << '(' << i << ',' << j 
-                            << ") " << at(i, j) << '\t';
+                        ost << '_' << i << ',' << j << '_' << at(i, j) << "_\t";
                     }
                     std::cout << std::endl;
                 }

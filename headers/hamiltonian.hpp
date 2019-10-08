@@ -25,6 +25,7 @@ namespace hamiltonian{
                 std::shared_ptr<matrix::herm> P = nullptr;
                 std::shared_ptr<matrix::herm> Kz = nullptr;
                 std::shared_ptr<matrix::herm> PKz = nullptr;
+                std::shared_ptr<matrix::herm> KzP = nullptr;
                 std::shared_ptr<matrix::herm> AG3Kz = nullptr;
                 std::shared_ptr<matrix::herm> CKKz = nullptr;
                 std::shared_ptr<matrix::herm> TFPO = nullptr;
@@ -48,6 +49,7 @@ namespace hamiltonian{
                         {"P", P },
                         {"Kz", Kz },
                         {"PKz", PKz },
+                        {"KzP", KzP },
                         {"AG3Kz", AG3Kz },
                         {"CKKz", CKKz },
                         {"TFPO", TFPO },
@@ -82,13 +84,18 @@ namespace hamiltonian{
                 };
                 void fill_add(void){
                     std::size_t bsize = 
-                        static_cast<std::size_t>(blims.second - blims.first);
+                        static_cast<std::size_t>(blims.second - blims.first) + 1;
                     std::vector< std::complex<double> > kzs(bsize);
                     std::generate(kzs.begin(), kzs.end(), 
                         [&, n = blims.first](void) mutable {
-                            double val = static_cast<double>(++n) * 2. * M_PI / len;
+                            const double val = static_cast<double>(n++) * 2. * M_PI / len;
                             return std::complex<double>{val, 0.};
                         });
+                    /*std::cout << blims.first << ' ' << blims.second << std::endl;
+                    std::for_each(kzs.begin(), kzs.end(),
+                        [](std::complex<double> val){
+                            std::cout << val << std::endl;
+                        });*/
                     std::vector< std::complex<double> > ones(bsize, {1., 0.});
                     auto kzcmat = matrix::cmat::diagonal(kzs);
                     //kzcmat.print();
@@ -98,6 +105,8 @@ namespace hamiltonian{
                     P = std::shared_ptr<matrix::herm>(new matrix::herm(_pmat));
                     auto _pkz =  (*P) * (*Kz);
                     PKz = std::shared_ptr<matrix::herm>(new matrix::herm(_pkz));
+                    auto _kzp =  (*Kz) * (*P);
+                    KzP = std::shared_ptr<matrix::herm>(new matrix::herm(_kzp));
                     auto _ag3kz = ((*G3) * (*Kz)) + ((*Kz) * (*G3));
                     AG3Kz = std::shared_ptr<matrix::herm>(new matrix::herm(_ag3kz));
                     auto _ckkz = ((*K) * (*Kz)) - ((*Kz) * (*K));
@@ -121,7 +130,7 @@ namespace hamiltonian{
                         const double acc = 1.e-6){
                     len = hs.length();
                     accuracy = acc;
-                    blims = {- basis_size / 2, basis_size / 2 + 1};
+                    blims = {- (basis_size / 2), basis_size / 2};
                     fill_model(hs);
                     fill_add();
                 };
@@ -208,6 +217,7 @@ namespace hamiltonian{
                 matrix::herm get_hblock(
                         const std::pair<std::size_t, std::size_t> ij,
                         const std::pair<double, double> kxky) const {
+                    const auto ji = std::make_pair(ij.second, ij.first);
                     const auto  kx = kxky.first,
                                 ky = kxky.second;
                     const std::complex<double>
@@ -224,17 +234,24 @@ namespace hamiltonian{
                                 swp = Swp_term(ij, kxky);         
                     const auto  p = P->at(ij),
                                 pkz = PKz->at(ij),
+                                kzp = KzP->at(ij),
                                 es = Es->at(ij);
+                    const auto  rth = std::conj(R_term(ji, kxky)),
+                                cth = std::conj(C_term(ji, kxky));
+                    const auto  stmh = std::conj(Stm_term(ji, kxky)),
+                                stph = std::conj(Stp_term(ji, kxky));  
+                    const auto  swmh = std::conj(Swm_term(ji, kxky)),
+                                swph = std::conj(Swp_term(ji, kxky));
                     std::vector< std::complex<double> > rv = 
                         {
-                            tt,         {0.,0.},        - p * kp / st2,         st2 * pkz / st3,            p * km / (st2 * st3),       {0.,0.},            - pkz / st3,            - p * km / st3,
-                            {0., 0},    tt,             {0., 0.},               - p * kp / (st2 * st3),     st2 * pkz / st3,            p * km / st2,       - p * kp / st3,         pkz / st3,
-                            {0., 0},    {0., 0},        ut + vt,                -stm,                       rt,                         {0., 0.},           stm / st2,              - st2 * rt,
-                            {0., 0},    {0., 0},        {0., 0},                ut - vt,                    ct,                         rt,                 st2 * vt,               - st3 * swm / st2,
-                            {0., 0},    {0., 0},        {0., 0},                {0., 0},                    ut - vt,                    std::conj(stp),     - st3 * swp / st2,      - st2 * vt,
-                            {0., 0},    {0., 0},        {0., 0},                {0., 0},                    {0., 0},                    ut + vt,            st2 * std::conj(rt),    stp / st2,
-                            {0., 0},    {0., 0},        {0., 0},                {0., 0},                    {0., 0},                    {0., 0.},           ut - es,                ct,
-                            {0., 0},    {0., 0},        {0., 0},                {0., 0},                    {0., 0},                    {0., 0.},           {0., 0.},               ut - es    
+                            tt,                     {0.,0.},                - p * kp / st2,         st2 * pkz / st3,            p * km / (st2 * st3),       {0.,0.},            - pkz / st3,            - p * km / st3,
+                            {0., 0},                tt,                     {0., 0.},               - p * kp / (st2 * st3),     st2 * pkz / st3,            p * km / st2,       - p * kp / st3,         pkz / st3,
+                            - km * p / st2,         {0., 0.},               ut + vt,                -stm,                       rt,                         {0., 0.},           stm / st2,              - st2 * rt,
+                            st2 * kzp / st3,        - km * p / (st2 * st3), - stmh,                 ut - vt,                    ct,                         rt,                 st2 * vt,               - st3 * swm / st2,
+                            kp * p / (st2 * st3),   st2 * kzp / st3,        rth,                    cth,                        ut - vt,                    stph,               - st3 * swp / st2,      - st2 * vt,
+                            {0., 0},                kp * p / st2,           {0., 0},                rth,                        stp,                        ut + vt,            st2 * rth,              stp / st2,
+                            - kzp / st3,            - km * p / st3,         stmh / st2,             st2 * vt,                   - st3 * swph / st2,         st2 * rt,           ut - es,                ct,
+                            - kp * p / st3,         kzp / st3,              - st2 * rth,            - st3 * swmh / st2,         - st2 * vt,                 stph / st2,         cth,                    ut - es    
                         };
                     auto am = matrix::cmat(rv);
                     auto cm = matrix::cmat::copy(am);
@@ -242,7 +259,7 @@ namespace hamiltonian{
                 };
             matrix::herm full_h(const std::pair<double, double> kxky) const{
                 std::size_t bsize = 
-                        static_cast<std::size_t>(blims.second - blims.first);
+                        static_cast<std::size_t>(blims.second - blims.first + 1);
                 matrix::cmat rv(8 * bsize);
                 for(std::size_t r = 0; r < bsize; r++){
                     std::size_t i = r * 8;
@@ -252,7 +269,9 @@ namespace hamiltonian{
                         rv.put_submatrix(ham, {i, j});
                     }
                 }
-                return matrix::herm(rv);
+                auto ret_val = matrix::herm(rv);
+                ret_val.print();
+                return ret_val;
             };
     };
 };
