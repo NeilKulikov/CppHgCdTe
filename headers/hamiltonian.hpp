@@ -19,23 +19,24 @@
 namespace hamiltonian{
 
     class hcore : 
-        public materials::model< std::shared_ptr<matrix::herm> >{
+        public materials::model< std::shared_ptr<matrix::cmat> >{
             public:
                 double accuracy = 1.e-6;
-                std::shared_ptr<matrix::herm> P = nullptr;
-                std::shared_ptr<matrix::herm> Kz = nullptr;
-                std::shared_ptr<matrix::herm> PKz = nullptr;
-                std::shared_ptr<matrix::herm> KzP = nullptr;
-                std::shared_ptr<matrix::herm> AG3Kz = nullptr;
-                std::shared_ptr<matrix::herm> CKKz = nullptr;
-                std::shared_ptr<matrix::herm> TFPO = nullptr;
-                std::shared_ptr<matrix::herm> KzTKz = nullptr;
-                std::shared_ptr<matrix::herm> KzG2Kz = nullptr;
-                std::shared_ptr<matrix::herm> KzG1Kz = nullptr;
+                std::size_t integ_space = 16384;
+                std::shared_ptr<matrix::cmat> P = nullptr;
+                std::shared_ptr<matrix::cmat> Kz = nullptr;
+                std::shared_ptr<matrix::cmat> PKz = nullptr;
+                std::shared_ptr<matrix::cmat> KzP = nullptr;
+                std::shared_ptr<matrix::cmat> AG3Kz = nullptr;
+                std::shared_ptr<matrix::cmat> CKKz = nullptr;
+                std::shared_ptr<matrix::cmat> TFPO = nullptr;
+                std::shared_ptr<matrix::cmat> KzTKz = nullptr;
+                std::shared_ptr<matrix::cmat> KzG2Kz = nullptr;
+                std::shared_ptr<matrix::cmat> KzG1Kz = nullptr;
             protected:
                 double len = 0;
                 std::pair<int, int> blims = {0, 1};
-                std::map< std::string, std::shared_ptr<matrix::herm>& > mapping =
+                std::map< std::string, std::shared_ptr<matrix::cmat>& > mapping =
                     {
                         {"Eg", Eg },
                         {"Es", Es },
@@ -76,53 +77,67 @@ namespace hamiltonian{
                                 it.second, 
                                 len, 
                                 blims,
-                                16384,
+                                integ_space,
                                 accuracy);
                             at(it.first) = 
-                                std::shared_ptr<matrix::herm>(new matrix::herm(hmat));
+                                std::shared_ptr<matrix::cmat>(new matrix::herm(hmat));
                         });
                 };
                 void fill_add(void){
                     std::size_t bsize = 
                         static_cast<std::size_t>(blims.second - blims.first) + 1;
+                    std::vector< std::complex<double> > ones(bsize, {1., 0.});
+                    {
                     std::vector< std::complex<double> > kzs(bsize);
                     std::generate(kzs.begin(), kzs.end(), 
                         [&, n = blims.first](void) mutable {
                             const double val = static_cast<double>(n++) * 2. * M_PI / len;
                             return std::complex<double>{val, 0.};
                         });
-                    /*std::cout << blims.first << ' ' << blims.second << std::endl;
-                    std::for_each(kzs.begin(), kzs.end(),
-                        [](std::complex<double> val){
-                            std::cout << val << std::endl;
-                        });*/
-                    std::vector< std::complex<double> > ones(bsize, {1., 0.});
                     auto kzcmat = matrix::cmat::diagonal(kzs);
-                    //kzcmat.print();
-                    Kz = std::shared_ptr<matrix::herm>(new matrix::herm(kzcmat));
+                    Kz = std::shared_ptr<matrix::cmat>(new matrix::herm(kzcmat));
+                    }
+                    {
                     auto _pmat = matrix::cmat::diagonal(ones) * 
                         std::complex<double>{std::sqrt(esk * materials::CdHgTe(0.5).Ep), 0.};
-                    P = std::shared_ptr<matrix::herm>(new matrix::herm(_pmat));
+                    P = std::shared_ptr<matrix::cmat>(new matrix::herm(_pmat));
+                    }
+                    {
                     auto _pkz =  (*P) * (*Kz);
-                    PKz = std::shared_ptr<matrix::herm>(new matrix::herm(_pkz));
+                    PKz = std::shared_ptr<matrix::cmat>(new matrix::cmat(_pkz));
+                    }
+                    {
                     auto _kzp =  (*Kz) * (*P);
-                    KzP = std::shared_ptr<matrix::herm>(new matrix::herm(_kzp));
+                    KzP = std::shared_ptr<matrix::cmat>(new matrix::cmat(_kzp));
+                    }
+                    {
                     auto _ag3kz = ((*G3) * (*Kz)) + ((*Kz) * (*G3));
-                    AG3Kz = std::shared_ptr<matrix::herm>(new matrix::herm(_ag3kz));
+                    AG3Kz = std::shared_ptr<matrix::cmat>(new matrix::cmat(_ag3kz));
+                    }
+                    {
                     auto _ckkz = ((*K) * (*Kz)) - ((*Kz) * (*K));
-                    CKKz = std::shared_ptr<matrix::herm>(new matrix::herm(_ckkz));
+                    CKKz = std::shared_ptr<matrix::cmat>(new matrix::cmat(_ckkz));
+                    }
+                    {
                     auto _tfpo = ((*F) * std::complex<double>{2., 0.})
                         + matrix::cmat::diagonal(ones);
-                    TFPO = std::shared_ptr<matrix::herm>(new matrix::herm(_tfpo));
+                    TFPO = std::shared_ptr<matrix::cmat>(new matrix::herm(_tfpo));
+                    }
+                    {
                     auto _kztkz = ((*Kz) * (*TFPO)) * (*Kz);
-                    KzTKz = std::shared_ptr<matrix::herm>(new matrix::herm(_kztkz));
+                    KzTKz = std::shared_ptr<matrix::cmat>(new matrix::cmat(_kztkz));
+                    }
+                    {
                     auto _kzg2kz = ((*Kz) * (*G2)) * (*Kz);
-                    KzG2Kz = std::shared_ptr<matrix::herm>(new matrix::herm(_kzg2kz));
+                    KzG2Kz = std::shared_ptr<matrix::cmat>(new matrix::cmat(_kzg2kz));
+                    }
+                    {
                     auto _kzg1kz = ((*Kz) * (*G1)) * (*Kz);
-                    KzG1Kz = std::shared_ptr<matrix::herm>(new matrix::herm(_kzg1kz));
+                    KzG1Kz = std::shared_ptr<matrix::cmat>(new matrix::cmat(_kzg1kz));
+                    }
                 };
             public:
-                std::shared_ptr<matrix::herm>& at(std::string const & in){
+                std::shared_ptr<matrix::cmat>& at(std::string const & in){
                     return mapping.at(in);
                 };
                 hcore(  materials::heterostruct const & hs, 
@@ -214,7 +229,7 @@ namespace hamiltonian{
                     const std::complex<double> km = {kx, -ky};
                     return - esk * st3 * km * (AG3Kz->at(ij) - ot3 * CKKz->at(ij));
                 };
-                matrix::herm get_hblock(
+                matrix::cmat get_hblock(
                         const std::pair<std::size_t, std::size_t> ij,
                         const std::pair<double, double> kxky) const {
                     const auto ji = std::make_pair(ij.second, ij.first);
@@ -254,8 +269,7 @@ namespace hamiltonian{
                             - kp * p / st3,         kzp / st3,              - st2 * rth,            - st3 * swmh / st2,         - st2 * vt,                 stph / st2,         cth,                    ut - es    
                         };
                     auto am = matrix::cmat(rv);
-                    auto cm = matrix::cmat::copy(am);
-                    return matrix::herm(cm);
+                    return matrix::cmat::copy(am);
                 };
             matrix::herm full_h(const std::pair<double, double> kxky) const{
                 std::size_t bsize = 
@@ -270,7 +284,7 @@ namespace hamiltonian{
                     }
                 }
                 auto ret_val = matrix::herm(rv);
-                ret_val.print();
+                //ret_val.print();
                 return ret_val;
             };
     };

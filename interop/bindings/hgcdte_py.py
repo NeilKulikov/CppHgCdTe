@@ -57,14 +57,13 @@ def gen_eigen(hi : (ct.c_void_p, int)):
 lib.get_matr.restype = ct.POINTER(ct.c_double)
 lib.get_matr.argtypes = [ct.c_void_p]
 
-def get_hinst(hi : (ct.c_void_p, int)):
-    size = 8 * hi[1]
+def get_matr(hi : (ct.c_void_p, int)):
     rv = np.ctypeslib.as_array(
             lib.get_matr(hi[0]),
-            shape = (2 * size * size,))
+            shape = (2 * hi[1]**2,))
     real, imag = rv[::2], rv[1::2]
     comp = real + 1j * imag
-    return comp.reshape((size, size))
+    return comp.reshape((hi[1], hi[1]))
 
 
 def get_spectre(hc : (ct.c_void_p, int), k : (float, float)  = (0., 0.)):
@@ -90,7 +89,7 @@ class hcore:
         return get_spectre(self.body, k)
     def hinst(self, k : (float, float)  = (0., 0.)):
         hi = make_hinst(self.body, k)
-        rv = get_hinst(hi)
+        rv = get_matr((hi[0], 8 * hi[1]))
         del_hinst(hi[0])
         return rv
 
