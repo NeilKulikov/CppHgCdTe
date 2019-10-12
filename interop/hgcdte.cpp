@@ -25,7 +25,7 @@ int del_model(void* md){
     return 0;
 };
 
-void* make_hcore(void* model, size_t bsize, double accuracy){
+void* make_hcorea(void* model, size_t bsize, double accuracy){
     auto md = reinterpret_cast<materials::heterostruct*>(model);
     auto rv = new hamiltonian::hcore((*md), bsize, accuracy);
     return reinterpret_cast<void*>(rv);
@@ -38,7 +38,7 @@ int del_hcore(void* hc){
 };
 
 void* make_hcore(void* model, size_t bsize){
-    return make_hcore(model, bsize, 1.e-7);
+    return make_hcorea(model, bsize, 1.e-7);
 };
     
 void* make_hinst(void* hcore, double kx, double ky){
@@ -49,6 +49,17 @@ void* make_hinst(void* hcore, double kx, double ky){
     return reinterpret_cast<void*>(rv);
 };
 
+void* get_diag_ws(size_t size){
+    auto rv = gsl_eigen_herm_alloc(size);
+    return reinterpret_cast<void*>(rv);
+};
+
+int del_diag_ws(void* ws){
+    auto wp = reinterpret_cast<gsl_eigen_herm_workspace*>(ws);
+    gsl_eigen_herm_free(wp);
+    return 0;
+};
+
 int del_hinst(void* hi){
     auto hp = reinterpret_cast<matrix::herm*>(hi);
     delete hp;
@@ -56,8 +67,13 @@ int del_hinst(void* hi){
 };
 
 double* gen_eigen(void* hinst){
+    return gen_eigena(hinst, nullptr);
+};
+
+double* gen_eigena(void* hinst, void* ws){
     auto hf = reinterpret_cast<matrix::herm*>(hinst);
-    auto es = hf->diagonalize(); 
+    auto wp = reinterpret_cast<gsl_eigen_herm_workspace*>(ws);
+    auto es = hf->diagonalize(wp); 
     auto rv = new double[hf->size()];
     for(size_t i = 0; i < es.size(); i++) rv[i] = es[i];
     return rv;

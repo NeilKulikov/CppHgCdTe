@@ -101,39 +101,31 @@ namespace operators{
         const std::size_t bsize = 101,
         const std::size_t max_eval = 4096,
         const double eps_abs = 1.e-8,
-        const double eps_rel = 1.e-3){
+        const double eps_rel = 1.e-3,
+        gsl_integration_cquad_workspace* ws = nullptr){
             using namespace std::placeholders;
             std::vector< std::complex<double> > rv(bsize);
-            std::function<std::complex<double>(int, double)> func = 
-                [&](int p, double x){ return plane_wave(p, x / len) * inp(x); };
-            gsl_integration_cquad_workspace* ws = 
-                gsl_integration_cquad_workspace_alloc(max_eval);
-            /*gsl_integration_workspace* ws = 
-                gsl_integration_workspace_alloc(max_eval);*/
+            const double normal_factor = 1. / len;
+            const std::function<std::complex<double>(int, double)> func = 
+                [&](int p, double x){ 
+                    return plane_wave(p, x * normal_factor) * inp(x); 
+                };
+            const bool own_ws = ws == nullptr;
+            ws = own_ws ? gsl_integration_cquad_workspace_alloc(max_eval) : ws;
             for(std::size_t i = 0; i < bsize; i++){
-                //std::cout << 2. * M_PI * static_cast<double>(i) / len << std::endl;
                 std::function< std::complex<double>(double) > igr =
                     std::bind(func, static_cast<int>(i), _1);
-                /*auto ires = staff::integrate_qag(
-                        igr, 
-                        {0., len}, 
-                        ws, 
-                        max_eval,
-                        GSL_INTEG_GAUSS21,
-                        eps_abs,
-                        eps_rel);*/
-                auto ires = staff::integrate_cquad(
+                const auto ires = staff::integrate_cquad(
                         igr, 
                         {0., len}, 
                         ws, 
                         max_eval,
                         eps_abs,
                         eps_rel);
-                //auto ires = staff::integrate(igr, {0., len}, max_eval);
-                rv[i] = ires.first / len;
+                rv[i] = ires.first * normal_factor;
             }
-            gsl_integration_cquad_workspace_free(ws);
-            /*gsl_integration_workspace_free(ws);*/
+            if(own_ws)
+                gsl_integration_cquad_workspace_free(ws);
             return rv;
         };
 
@@ -157,13 +149,14 @@ namespace operators{
         std::pair<int, int> blims = {-50, 51},
         std::size_t max_eval = 16384,
         const double eps_abs = 0.,
-        const double eps_rel = 1.e-2){
+        const double eps_rel = 1.e-2,
+        gsl_integration_cquad_workspace* ws = nullptr){
             const int bs = blims.second - blims.first + 1;
             const std::size_t bsize = static_cast<std::size_t>(bs);
             if(bs <= 0)
                 throw std::length_error("Length of basis should be > 1");
             matrix::cmat rv(bsize);
-            auto cache = fourier(inp, len, bsize, max_eval, eps_abs, eps_rel);
+            auto cache = fourier(inp, len, bsize, max_eval, eps_abs, eps_rel, ws);
             op_fill(cache, rv);
             return matrix::herm(rv);
     };
@@ -176,7 +169,7 @@ namespace operators{
         const double eps_abs = 1.e-8,
         const double eps_rel = 1.e-4){
             using namespace std::complex_literals;
-            std::function<std::complex<double>(double)> nfunc = 
+            const std::function<std::complex<double>(double)> nfunc = 
                 [&](double x){ return std::complex<double>(inp(x), 0.); };
             return pw_matr(nfunc, len, blims, max_eval, eps_abs, eps_rel);
     };

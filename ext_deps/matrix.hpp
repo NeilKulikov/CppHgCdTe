@@ -230,7 +230,7 @@ namespace matrix{
             };
             std::vector<double> diagonalize(
                 gsl_eigen_herm_workspace* ws = nullptr){
-                    bool owner = (ws == nullptr);
+                    const bool owner = (ws == nullptr);
                     ws = owner ? gsl_eigen_herm_alloc(size()) : ws;
                     std::vector<double> evals(size());
                     auto gsl_evals = 

@@ -6,10 +6,17 @@
 #include <string>
 #include <utility>
 #include <complex>
-#include <algorithm>
-//#include <execution>
 #include <functional>
 #include <iostream>
+
+#ifdef USE_PSTL
+    #include <pstl/algorithm>
+    #include <pstl/execution>
+#else
+    #include <algorithm>
+    //#include <execution>
+#endif
+
 
 #include <model.hpp>
 #include <matrix.hpp>
@@ -71,7 +78,11 @@ namespace hamiltonian{
                             {"F", [&](double x){ return hs.at(x).F; } },
                             {"K", [&](double x){ return hs.at(x).K; } }
                         };
-                    std::for_each(flow.begin(), flow.end(),
+                    std::for_each(
+#ifdef USE_PSTL
+                        std::execution::par,
+#endif
+                        flow.begin(), flow.end(),
                         [&](auto& it){
                             auto hmat = operators::pw_matr(
                                 it.second, 
@@ -100,7 +111,7 @@ namespace hamiltonian{
                     {
                     auto _pmat = matrix::cmat::diagonal(ones) * 
                         std::complex<double>{std::sqrt(esk * materials::CdHgTe(0.5).Ep), 0.};
-                    P = std::shared_ptr<matrix::cmat>(new matrix::herm(_pmat));
+                    P = std::shared_ptr<matrix::herm>(new matrix::herm(_pmat));
                     }
                     {
                     auto _pkz =  (*P) * (*Kz);

@@ -12,7 +12,7 @@
 
 BOOST_AUTO_TEST_SUITE(HamiltonianTests)
 
-BOOST_AUTO_TEST_CASE(matrix_elem)
+BOOST_AUTO_TEST_CASE(model_test)
 {
     std::vector<double> xs = 
         { 0.0, 9.999, 10.001, 14.999, 15.001, 20. };
@@ -22,90 +22,69 @@ BOOST_AUTO_TEST_CASE(matrix_elem)
     BOOST_CHECK_CLOSE(hs.composition(12.5), 0.1, 1.e-2);
 }
 
-BOOST_AUTO_TEST_CASE(hcore_elem)
+BOOST_AUTO_TEST_CASE(spectr_test)
 {
     std::vector<double> xs = 
-        { 0.0, 9.5, 10.1, 14.9, 15.5, 20. };
+        { 0.0, 10., 10.0001, 14.9999, 15.0, 25.0 };
     std::vector<double> ys = 
-        { 0.7,   0.7,    0.1,    0.1,    0.7, 0.7 };
+        { 1.0, 1.0,  0.00000, 0.00000, 1.0,  1.0 };
     materials::heterostruct hs(xs, ys);
-    hamiltonian::hcore hc(hs);
-    BOOST_CHECK_CLOSE(hs.composition(12.5), 0.1, 1.e-2);
+    hamiltonian::hcore hc(hs, 61);
+    auto    spec0 = hc.full_h({0., 0.}).diagonalize(),
+            spec1 = hc.full_h({1., 0.}).diagonalize();
+    BOOST_CHECK_CLOSE(spec0[368] - spec0[364], 0.449509, 1.e-1);
+    BOOST_CHECK_CLOSE(spec0[366] - spec0[364], 0.055627, 1.e-1);
+    BOOST_CHECK_CLOSE(spec0[362] - spec0[364], -0.09348, 1.e-1);
+    BOOST_CHECK_CLOSE(spec0[360] - spec0[364], -0.13150, 1.e-1);
+    BOOST_CHECK_CLOSE(spec1[368] - spec0[364], 0.717170, 1.e-1);
+    BOOST_CHECK_CLOSE(spec1[366] - spec0[364], 0.583921, 1.e-1);
+    BOOST_CHECK_CLOSE(spec1[364] - spec0[364], -0.09533, 1.e-1);
+    BOOST_CHECK_CLOSE(spec1[362] - spec0[364], -0.15505, 1.e-1);
+    BOOST_CHECK_CLOSE(spec1[360] - spec0[364], -0.26302, 1.e-1);
 }
 
-BOOST_AUTO_TEST_CASE(hcore_compl)
-{
-    const int len = 101;
-    const int bsi = 11;
-    std::vector<double> xs(len), ys(len);
-    for(int i = 0; i < len; i++){
-        xs[i] = 0.1 * i;
-        ys[i] = 0.5 + 0.25 * std::sin(xs[i]);
-    }
-    materials::heterostruct hs(xs, ys);
-    BOOST_CHECK_CLOSE(hs.length(), 10., 1.e-2);
-    hamiltonian::hcore hc(hs, bsi);
-    BOOST_CHECK_CLOSE(hc.Eg->at(0, 0).real(), 0.710105, 1.);
-    BOOST_CHECK_CLOSE(hc.Eg->at(0, 1).real(), 0.144693, 1.);
-    BOOST_CHECK_CLOSE(hc.Eg->at(0, 1).imag(), -0.026889, 1.);
-    BOOST_CHECK_CLOSE(hc.Eg->at(0, 10).imag(), 0.00419287, 5.);
-    BOOST_CHECK_CLOSE(hc.Eg->at(0, 10).real(), -0.00225795, 5.);
-    BOOST_CHECK_CLOSE(hc.Eg->at(1, 10).imag(), 0.00468632, 5.);
-    BOOST_CHECK_CLOSE(hc.Eg->at(1, 10).real(), -0.00280413, 5.);
-}
-
-BOOST_AUTO_TEST_CASE(hcore_inst)
-{
-    const int len = 101;
-    const int bsi = 5;
-    std::vector<double> xs(len), ys(len);
-    for(int i = 0; i < len; i++){
-        xs[i] = 0.1 * i;
-        ys[i] = 0.5 + 0.25 * std::sin(xs[i]);
-    }
-    materials::heterostruct hs(xs, ys);
-    BOOST_CHECK_CLOSE(hs.length(), 10., 1.e-4);
-    hamiltonian::hcore hc(hs, bsi);
-    std::pair<double, double> kxky{1., 0.};
-    std::pair<std::size_t, std::size_t> ij{2, 3};
-    auto ins = hc.get_hblock(kxky, ij);
-    //ins.print();
-}
-
-BOOST_AUTO_TEST_CASE(hcore_solid)
-{
-    const int len = 101;
-    const int bsi = 11;
-    std::vector<double> xs(len), ys(len);
-    for(int i = 0; i < len; i++){
-        xs[i] = 0.1 * i;
-        ys[i] = 0.5 + 0.00005 * std::sin(xs[i]);
-    }
-    materials::heterostruct hs(xs, ys);
-    BOOST_CHECK_CLOSE(hs.length(), 10., 1.e-4);
-    hamiltonian::hcore hc(hs, bsi);
-    std::pair<double, double> kxky{0.5, 0.};
-    std::pair<std::size_t, std::size_t> ij{3, 3};
-    auto ins = hc.get_hblock(kxky, ij);
-    //ins.print();
-}
-
-BOOST_AUTO_TEST_CASE(hcore_full)
+BOOST_AUTO_TEST_CASE(transl_test)
 {
     std::vector<double> xs = 
-        { 0.0, 9.5, 10.1, 14.9, 15.5, 20. };
+        { 0.0, 5., 5.0001, 10., 10.001, 25.0 };
     std::vector<double> ys = 
-        { 0.7,   0.7,    0.1,    0.1,    0.7, 0.7 };
+        { 1.0, 1.0,  0.00000, 0.00000, 1.0,  1.0 };
     materials::heterostruct hs(xs, ys);
-    hamiltonian::hcore hc(hs);
-    std::pair<double, double>   kxky1{0.5, 0.},
-                                kxky2{0.3, 0.};
-    auto    f1 = hc.full_h(kxky1),
-            f2 = hc.full_h(kxky2);
-    auto    df = f1 - f2;
-    //df.print();
-    BOOST_CHECK_CLOSE(hs.composition(12.5), 0.1, 1.e-2);
-    //full.print();
+    hamiltonian::hcore hc(hs, 61);
+    auto    spec0 = hc.full_h({0., 0.}).diagonalize(),
+            spec1 = hc.full_h({1., 0.}).diagonalize();
+    BOOST_CHECK_CLOSE(spec0[368] - spec0[364], 0.449509, 1.e-1);
+    BOOST_CHECK_CLOSE(spec0[366] - spec0[364], 0.055627, 1.e-1);
+    BOOST_CHECK_CLOSE(spec0[362] - spec0[364], -0.09348, 1.e-1);
+    BOOST_CHECK_CLOSE(spec0[360] - spec0[364], -0.13150, 1.e-1);
+    BOOST_CHECK_CLOSE(spec1[368] - spec0[364], 0.717170, 1.e-1);
+    BOOST_CHECK_CLOSE(spec1[366] - spec0[364], 0.583921, 1.e-1);
+    BOOST_CHECK_CLOSE(spec1[364] - spec0[364], -0.09533, 1.e-1);
+    BOOST_CHECK_CLOSE(spec1[362] - spec0[364], -0.15505, 1.e-1);
+    BOOST_CHECK_CLOSE(spec1[360] - spec0[364], -0.26302, 1.e-1);
 }
+
+BOOST_AUTO_TEST_CASE(impure_test)
+{
+    std::vector<double> xs = 
+        { 0.0, 5., 5.0001, 8., 8.001, 25.0 };
+    std::vector<double> ys = 
+        { 0.7, 0.7,  0.1, 0.1, 0.7,  0.7 };
+    materials::heterostruct hs(xs, ys);
+    hamiltonian::hcore hc(hs, 61);
+    auto    spec0 = hc.full_h({0., 0.}).diagonalize(),
+            spec1 = hc.full_h({1., 0.}).diagonalize();
+    BOOST_CHECK_CLOSE(spec0[368] - spec0[364], 0.73246024, 1.e-1);
+    BOOST_CHECK_CLOSE(spec0[366] - spec0[364], 0.28199164, 1.e-1);
+    BOOST_CHECK_CLOSE(spec0[362] - spec0[364], -0.12547854, 1.e-1);
+    BOOST_CHECK_CLOSE(spec0[360] - spec0[364], -0.16914711, 1.e-1);
+    BOOST_CHECK_CLOSE(spec1[368] - spec0[364], 1.03442234, 1.e-1);
+    BOOST_CHECK_CLOSE(spec1[366] - spec0[364], 0.76566906, 1.e-1);
+    BOOST_CHECK_CLOSE(spec1[364] - spec0[364], -0.0987744, 1.e-1);
+    BOOST_CHECK_CLOSE(spec1[362] - spec0[364], -0.19366342, 1.e-1);
+    BOOST_CHECK_CLOSE(spec1[360] - spec0[364], -0.31618791, 1.e-1);
+}
+
+
 
 BOOST_AUTO_TEST_SUITE_END()
