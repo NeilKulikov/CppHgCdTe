@@ -16,7 +16,9 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 add_library(interop SHARED ${lib_source})
 
 if(PSTL)
-    target_link_libraries(interop GSL::gsl TBB::tbb)
+    set(libs_list ${Boost_LIBRARIES} GSL::gsl TBB::tbb)
 else(PSTL)
-    target_link_libraries(interop GSL::gsl)
+    set(libs_list ${Boost_LIBRARIES} GSL::gsl)
 endif(PSTL)
+
+target_link_libraries(interop ${libs_list})
