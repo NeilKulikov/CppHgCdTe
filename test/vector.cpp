@@ -24,8 +24,9 @@ BOOST_AUTO_TEST_CASE(Norm)
     BOOST_CHECK_CLOSE(rv, 16.88194 , 1.e-4);
 }
 
-/*BOOST_AUTO_TEST_CASE(Application)
+BOOST_AUTO_TEST_CASE(Application)
 {
+    using namespace vector;
     std::vector< std::complex<double> > data = 
         {
             {0.123, 3.54}, {345., -127.}, {1e-5, 1e-2},
@@ -37,9 +38,14 @@ BOOST_AUTO_TEST_CASE(Norm)
         {3., 4.},
         {-5., 6.}
     };
-    matrix::cmat a(data);
-    auto rv = a * vec;
-    BOOST_CHECK_CLOSE(rv, 16.88194 , 1.e-4);
-}*/
+    matrix::cmat mat(data);
+    const auto rv = mat * vec;
+    BOOST_CHECK_CLOSE(rv[0].real(), 1.5359e3 , 1.e-2);
+    BOOST_CHECK_CLOSE(rv[0].imag(), 1.0027e3 , 1.e-2);
+    BOOST_CHECK_CLOSE(rv[1].real(), -6.000034e8 , 1.e-2);
+    BOOST_CHECK_CLOSE(rv[1].imag(), -4.999958e8 , 1.e-2);
+    BOOST_CHECK_CLOSE(rv[2].real(), -1.53363e2 , 1.e-2);
+    BOOST_CHECK_CLOSE(rv[2].imag(), 2.8965e1 , 1.e-2);
+}
 
 BOOST_AUTO_TEST_SUITE_END()

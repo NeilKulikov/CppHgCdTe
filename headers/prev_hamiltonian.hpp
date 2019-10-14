@@ -1,5 +1,5 @@
-#ifndef HAMILTONIAN
-#define HAMILTONIAN
+#ifndef PREV_HAMILTONIAN
+#define PREV_HAMILTONIAN
 
 #include <map>
 #include <list>
@@ -23,7 +23,7 @@
 #include <constants.hpp>
 #include <operators.hpp>
 
-namespace hamiltonian{
+namespace prev{
 
     class hcore : 
         public materials::model< std::shared_ptr<matrix::cmat> >{

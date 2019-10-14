@@ -73,7 +73,6 @@ namespace materials{
             double composition(double z) const {
                 if(!((0. <= z) && (z <= len)))
                     throw std::out_of_range("z should be in interval [0;L]");
-                    //std::cout << z << std::endl;
                 return spl->eval(z);
             };
             model<double> at(double z) const {

@@ -20,8 +20,13 @@
 
 #include <model.hpp>
 #include <matrix.hpp>
+#include <vector.hpp>
 #include <constants.hpp>
 #include <operators.hpp>
+
+const static std::complex<double> cn = {0., 0.};
+const static std::complex<double> co = {1., 0.};
+const static std::complex<double> ci = {0., 1.};
 
 namespace hamiltonian{
 
@@ -90,37 +95,9 @@ namespace hamiltonian{
                     const int n = blims.first + static_cast<int>(i);
                     return 2. * M_PI * static_cast<double>(n) / len;
                 };
-                std::complex<double> Kz(
-                    std::pair<std::size_t, std::size_t> const & ij) const{
-                        const double kzv = 
-                            (ij.first == ij.second) 
-                                ? kz(ij.first) 
-                                : 0.;
-                        return {kzv, 0.};
-                };
                 std::complex<double> P_full(
                     std::pair<std::size_t, std::size_t> const & ij) const{
                         return std::sqrt(esk * Ep->at(ij));
-                };
-                std::complex<double> PKz(
-                    std::pair<std::size_t, std::size_t> const & ij) const{
-                        return P_full(ij) * kz(ij.second);
-                };
-                std::complex<double> KzP(
-                    std::pair<std::size_t, std::size_t> const & ij) const{
-                        return kz(ij.first) * P_full(ij);
-                };
-                std::complex<double> AG3Kz(
-                    std::pair<std::size_t, std::size_t> const & ij) const{
-                        const auto g3 = G3->at(ij);
-                        return 
-                            g3 * kz(ij.second) + kz(ij.first) * g3;
-                };
-                std::complex<double> CKKz(
-                    std::pair<std::size_t, std::size_t> const & ij) const{
-                        const auto k = K->at(ij);
-                        return
-                            k * kz(ij.second) - kz(ij.first) * k;
                 };
                 std::complex<double> TFPO(
                     std::pair<std::size_t, std::size_t> const & ij) const{
@@ -130,97 +107,259 @@ namespace hamiltonian{
                                 std::complex<double>{0., 0.};
                         return 2. * F->at(ij) + delta;
                 };
-                std::complex<double> KzTKz(
-                    std::pair<std::size_t, std::size_t> const & ij) const{
-                        return kz(ij.first) * TFPO(ij) * kz(ij.second);
-                };
-                std::complex<double> KzG2Kz(
-                    std::pair<std::size_t, std::size_t> const & ij) const{
-                        return kz(ij.first) * G2->at(ij) * kz(ij.second);
-                };
-                std::complex<double> KzG1Kz(
-                    std::pair<std::size_t, std::size_t> const & ij) const{
-                        return kz(ij.first) * G1->at(ij) * kz(ij.second);
+                std::complex<double> T_term(
+                        std::pair<std::size_t, std::size_t> const & ij,
+                        std::vector< std::complex<double> >& q1,
+                        std::vector< std::complex<double> >& q2) const{
+                    const auto Ec = Eg->at(ij) + VBO->at(ij);
+                    const auto ef = esk * TFPO(ij);
+                    std::vector< std::complex<double> > core_vec  = 
+                        {
+                            Ec,     cn,     cn,     cn,
+                            cn,     ef,     cn,     cn,
+                            cn,     cn,     ef,     cn,
+                            cn,     cn,     cn,     ef
+                        };
+                    matrix::cmat core(core_vec);
+                    auto cq1 = vector::dot(core, q1);
+                    return vector::dot(q2, cq1);
                 };
                 std::complex<double> T_term(
                         std::pair<std::size_t, std::size_t> const & ij,
-                        std::pair<double, double> const & kxky) const {
-                    const double    kx = kxky.first,
-                                    ky = kxky.second;
-                    const double    skln = kx * kx + ky * ky;
-                    const auto      Ec = Eg->at(ij) + VBO->at(ij);
-                    const auto      Kin = esk * (TFPO(ij) * skln + KzTKz(ij));
-                    return Ec + Kin;
+                        std::pair<double, double> const & kxky) const{
+                    std::vector< std::complex<double> >
+                        q1 = {co, kxky.first, kxky.second, {kz(ij.first), 0.}},
+                        q2 = {co, kxky.first, kxky.second, {kz(ij.second), 0.}};
+                    return T_term(ij, q1, q2);
                 };
                 std::complex<double> U_term(
                         std::pair<std::size_t, std::size_t> const & ij,
-                        std::pair<double, double> const & kxky) const {
-                    const double    kx = kxky.first,
-                                    ky = kxky.second;
-                    const double    skln = kx * kx + ky * ky;
-                    const auto      Ev = VBO->at(ij);
-                    const auto      Kin = esk * (G1->at(ij) * skln + KzG1Kz(ij));
-                    return Ev - Kin;
+                        std::vector< std::complex<double> >& q1,
+                        std::vector< std::complex<double> >& q2) const{
+                    const auto Ev = VBO->at(ij);
+                    const auto g1 = esk * G1->at(ij);
+                    std::vector< std::complex<double> > core_vec  = 
+                        {
+                            Ev,     cn,     cn,     cn,
+                            cn,    -g1,     cn,     cn,
+                            cn,     cn,    -g1,     cn,
+                            cn,     cn,     cn,    -g1
+                        };
+                    matrix::cmat core(core_vec);
+                    auto cq1 = vector::dot(core, q1);
+                    return vector::dot(q2, cq1);
+                };
+                std::complex<double> U_term(
+                        std::pair<std::size_t, std::size_t> const & ij,
+                        std::pair<double, double> const & kxky) const{
+                    std::vector< std::complex<double> >
+                        q1 = {co, kxky.first, kxky.second, {kz(ij.first), 0.}},
+                        q2 = {co, kxky.first, kxky.second, {kz(ij.second), 0.}};
+                    return U_term(ij, q1, q2);
                 };
                 std::complex<double> V_term(
                         std::pair<std::size_t, std::size_t> const & ij,
-                        std::pair<double, double> const & kxky) const {
-                    const double    kx = kxky.first,
-                                    ky = kxky.second;
-                    const double    skln = kx * kx + ky * ky;
-                    return - esk * (G2->at(ij) * skln - 2. * KzG2Kz(ij));
+                        std::vector< std::complex<double> >& q1,
+                        std::vector< std::complex<double> >& q2) const{
+                    const auto g2 = esk * G2->at(ij);
+                    std::vector< std::complex<double> > core_vec  = 
+                        {
+                            cn,     cn,     cn,     cn,
+                            cn,    -g2,     cn,     cn,
+                            cn,     cn,    -g2,     cn,
+                            cn,     cn,     cn,     2. * g2
+                        };
+                    matrix::cmat core(core_vec);
+                    auto cq1 = vector::dot(core, q1);
+                    return vector::dot(q2, cq1);
+                };
+                std::complex<double> V_term(
+                        std::pair<std::size_t, std::size_t> const & ij,
+                        std::pair<double, double> const & kxky) const{
+                    std::vector< std::complex<double> >
+                        q1 = {co, kxky.first, kxky.second, {kz(ij.first), 0.}},
+                        q2 = {co, kxky.first, kxky.second, {kz(ij.second), 0.}};
+                    return V_term(ij, q1, q2);
+                };
+                std::complex<double> Rp_term(
+                        std::pair<std::size_t, std::size_t> const & ij,
+                        std::vector< std::complex<double> >& q1,
+                        std::vector< std::complex<double> >& q2) const{
+                    const auto mu = 0.5 * esk * (G3->at(ij) - G2->at(ij));
+                    std::vector< std::complex<double> > core_vec  = 
+                        {
+                            cn,     cn,     cn,     cn,
+                            cn,     co,     ci,     cn,
+                            cn,     ci,    -co,     cn,
+                            cn,     cn,     cn,     cn
+                        };
+                    matrix::cmat core(core_vec);
+                    auto cq1 = vector::dot(core, q1);
+                    return mu * vector::dot(q2, cq1);
+                };
+                std::complex<double> Rm_term(
+                        std::pair<std::size_t, std::size_t> const & ij,
+                        std::vector< std::complex<double> >& q1,
+                        std::vector< std::complex<double> >& q2) const{
+                    const auto nu = 0.5 * esk * (G3->at(ij) + G2->at(ij));
+                    std::vector< std::complex<double> > core_vec  = 
+                        {
+                            cn,     cn,     cn,     cn,
+                            cn,     co,    -ci,     cn,
+                            cn,    -ci,    -co,     cn,
+                            cn,     cn,     cn,     cn
+                        };
+                    matrix::cmat core(core_vec);
+                    auto cq1 = vector::dot(core, q1);
+                    return nu * vector::dot(q2, cq1);
                 };
                 std::complex<double> R_term(
                         std::pair<std::size_t, std::size_t> const & ij,
-                        std::pair<double, double> const & kxky) const {
-                    const double    kx = kxky.first,
-                                    ky = kxky.second;
-                    const std::complex<double>
-                                    kp = {kx, ky},
-                                    km = {kx, -ky};
-                    const auto      mu = 0.5 * (G3->at(ij) - G2->at(ij)),
-                                    gt = 0.5 * (G3->at(ij) + G2->at(ij));
-                    return - esk * st3 * (mu * kp * kp - gt * km * km);
+                        std::vector< std::complex<double> >& q1,
+                        std::vector< std::complex<double> >& q2) const{
+                    return -st3 * (Rp_term(ij, q1, q2) - Rm_term(ij, q1, q2));
+                };
+                std::complex<double> R_term(
+                        std::pair<std::size_t, std::size_t> const & ij,
+                        std::pair<double, double> const & kxky) const{
+                    std::vector< std::complex<double> >
+                        q1 = {co, kxky.first, kxky.second, {kz(ij.first), 0.}},
+                        q2 = {co, kxky.first, kxky.second, {kz(ij.second), 0.}};
+                    return R_term(ij, q1, q2);
+                };
+                std::complex<double> Qm_term(
+                        std::pair<std::size_t, std::size_t> const & ij,
+                        std::vector< std::complex<double> >& q1,
+                        std::vector< std::complex<double> >& q2) const{
+                    const auto k2 = esk * K->at(ij);
+                    std::vector< std::complex<double> > core_vec  = 
+                        {
+                            cn,     cn,     cn,         cn,
+                            cn,     cn,     cn,         -k2,
+                            cn,     cn,     cn,         ci * k2,
+                            cn,     k2,     -ci * k2,   cn
+                        };
+                    matrix::cmat core(core_vec);
+                    auto cq1 = vector::dot(core, q1);
+                    return vector::dot(q2, cq1);
+                };
+                std::complex<double> Qp_term(
+                        std::pair<std::size_t, std::size_t> const & ij,
+                        std::vector< std::complex<double> >& q1,
+                        std::vector< std::complex<double> >& q2) const{
+                    const auto k2 = esk * K->at(ij);
+                    std::vector< std::complex<double> > core_vec  = 
+                        {
+                            cn,     cn,     cn,         cn,
+                            cn,     cn,     cn,         -k2,
+                            cn,     cn,     cn,         -ci * k2,
+                            cn,     k2,   ci * k2,    cn
+                        };
+                    matrix::cmat core(core_vec);
+                    auto cq1 = vector::dot(core, q1);
+                    return vector::dot(q2, cq1);
+                };
+                std::complex<double> Sp_term(
+                        std::pair<std::size_t, std::size_t> const & ij,
+                        std::vector< std::complex<double> >& q1,
+                        std::vector< std::complex<double> >& q2) const{
+                    const auto g3 = esk * G3->at(ij);
+                    std::vector< std::complex<double> > core_vec  = 
+                        {
+                            cn,     cn,     cn,         cn,
+                            cn,     cn,     cn,         g3,
+                            cn,     cn,     cn,         ci * g3,
+                            cn,     g3,     ci * g3,   cn
+                        };
+                    matrix::cmat core(core_vec);
+                    auto cq1 = vector::dot(core, q1);
+                    return vector::dot(q2, cq1);
+                };
+                std::complex<double> Sm_term(
+                        std::pair<std::size_t, std::size_t> const & ij,
+                        std::vector< std::complex<double> >& q1,
+                        std::vector< std::complex<double> >& q2) const{
+                    const auto g3 = esk * G3->at(ij);
+                    std::vector< std::complex<double> > core_vec  = 
+                        {
+                            cn,     cn,     cn,         cn,
+                            cn,     cn,     cn,         g3,
+                            cn,     cn,     cn,         -ci * g3,
+                            cn,     g3,     -ci * g3,   cn
+                        };
+                    matrix::cmat core(core_vec);
+                    auto cq1 = vector::dot(core, q1);
+                    return vector::dot(q2, cq1);
                 };
                 std::complex<double> C_term(
                         std::pair<std::size_t, std::size_t> const & ij,
-                        std::pair<double, double> const & kxky) const {
-                    const double    kx = kxky.first,
-                                    ky = kxky.second;
-                    const std::complex<double> km = {kx, -ky};
-                    return esk * 2. * km * CKKz(ij);
+                        std::vector< std::complex<double> >& q1,
+                        std::vector< std::complex<double> >& q2) const{
+                    return 2. * Qm_term(ij, q1, q2);
+                };
+                std::complex<double> C_term(
+                        std::pair<std::size_t, std::size_t> const & ij,
+                        std::pair<double, double> const & kxky) const{
+                    std::vector< std::complex<double> >
+                        q1 = {co, kxky.first, kxky.second, {kz(ij.first), 0.}},
+                        q2 = {co, kxky.first, kxky.second, {kz(ij.second), 0.}};
+                    return C_term(ij, q1, q2);
                 };
                 std::complex<double> Stp_term(
                         std::pair<std::size_t, std::size_t> const & ij,
-                        std::pair<double, double> const & kxky) const {
-                    const double    kx = kxky.first,
-                                    ky = kxky.second;
-                    const std::complex<double> kp = {kx, ky};
-                    return - esk * st3 * kp * (AG3Kz(ij) + CKKz(ij));
+                        std::vector< std::complex<double> >& q1,
+                        std::vector< std::complex<double> >& q2) const{
+                    return -st3 * (Sp_term(ij, q1, q2) + Qp_term(ij, q1, q2));
+                };
+                std::complex<double> Stp_term(
+                        std::pair<std::size_t, std::size_t> const & ij,
+                        std::pair<double, double> const & kxky) const{
+                    std::vector< std::complex<double> >
+                        q1 = {co, kxky.first, kxky.second, {kz(ij.first), 0.}},
+                        q2 = {co, kxky.first, kxky.second, {kz(ij.second), 0.}};
+                    return Stp_term(ij, q1, q2);
                 };
                 std::complex<double> Stm_term(
                         std::pair<std::size_t, std::size_t> const & ij,
-                        std::pair<double, double> const & kxky) const {
-                    const double    kx = kxky.first,
-                                    ky = kxky.second;
-                    const std::complex<double> km = {kx, -ky};
-                    return - esk * st3 * km * (AG3Kz(ij) + CKKz(ij));
+                        std::vector< std::complex<double> >& q1,
+                        std::vector< std::complex<double> >& q2) const{
+                    return -st3 * (Sm_term(ij, q1, q2) + Qm_term(ij, q1, q2));
+                };
+                std::complex<double> Stm_term(
+                        std::pair<std::size_t, std::size_t> const & ij,
+                        std::pair<double, double> const & kxky) const{
+                    std::vector< std::complex<double> >
+                        q1 = {co, kxky.first, kxky.second, {kz(ij.first), 0.}},
+                        q2 = {co, kxky.first, kxky.second, {kz(ij.second), 0.}};
+                    return Stm_term(ij, q1, q2);
                 };
                 std::complex<double> Swp_term(
                         std::pair<std::size_t, std::size_t> const & ij,
-                        std::pair<double, double> const & kxky) const {
-                    const double    kx = kxky.first,
-                                    ky = kxky.second;
-                    const std::complex<double> kp = {kx, ky};
-                    return - esk * st3 * kp * (AG3Kz(ij) - ot3 * CKKz(ij));
+                        std::vector< std::complex<double> >& q1,
+                        std::vector< std::complex<double> >& q2) const{
+                    return -st3 * (Sp_term(ij, q1, q2) - ot3 * Qp_term(ij, q1, q2));
+                };
+                std::complex<double> Swp_term(
+                        std::pair<std::size_t, std::size_t> const & ij,
+                        std::pair<double, double> const & kxky) const{
+                    std::vector< std::complex<double> >
+                        q1 = {co, kxky.first, kxky.second, {kz(ij.first), 0.}},
+                        q2 = {co, kxky.first, kxky.second, {kz(ij.second), 0.}};
+                    return Swp_term(ij, q1, q2);
                 };
                 std::complex<double> Swm_term(
                         std::pair<std::size_t, std::size_t> const & ij,
-                        std::pair<double, double> const & kxky) const {
-                    const double    kx = kxky.first,
-                                    ky = kxky.second;
-                    const std::complex<double> km = {kx, -ky};
-                    return - esk * st3 * km * (AG3Kz(ij) - ot3 * CKKz(ij));
+                        std::vector< std::complex<double> >& q1,
+                        std::vector< std::complex<double> >& q2) const{
+                    return -st3 * (Sm_term(ij, q1, q2) - ot3 * Qm_term(ij, q1, q2));
+                };
+                std::complex<double> Swm_term(
+                        std::pair<std::size_t, std::size_t> const & ij,
+                        std::pair<double, double> const & kxky) const{
+                    std::vector< std::complex<double> >
+                        q1 = {co, kxky.first, kxky.second, {kz(ij.first), 0.}},
+                        q2 = {co, kxky.first, kxky.second, {kz(ij.second), 0.}};
+                    return Swm_term(ij, q1, q2);
                 };
                 matrix::cmat get_hblock(
                         const std::pair<std::size_t, std::size_t> ij,
@@ -231,25 +370,36 @@ namespace hamiltonian{
                     const std::complex<double>
                                 kp = {kx, ky},
                                 km = {kx, -ky};
-                    const auto  tt = T_term(ij, kxky),
-                                ut = U_term(ij, kxky),
-                                vt = V_term(ij, kxky),
-                                rt = R_term(ij, kxky),
-                                ct = C_term(ij, kxky);
-                    const auto  stm = Stm_term(ij, kxky),
-                                stp = Stp_term(ij, kxky);  
-                    const auto  swm = Swm_term(ij, kxky),
-                                swp = Swp_term(ij, kxky);         
+                    std::vector< std::complex<double> >
+                        q1 = {co, kxky.first, kxky.second, {kz(ij.first), 0.}},
+                        q2 = {co, kxky.first, kxky.second, {kz(ij.second), 0.}};
+                    const auto  tt = T_term(ij, q1, q2),
+                                ut = U_term(ij, q1, q2),
+                                vt = V_term(ij, q1, q2),
+                                rt = R_term(ij, q1, q2);
+                    const auto  qp = Qp_term(ij, q1, q2),
+                                qm = Qm_term(ij, q1, q2),
+                                sp = Sp_term(ij, q1, q2),
+                                sm = Sm_term(ij, q1, q2); 
+                    const auto  stm = -st3 * (sm + qm),
+                                stp = -st3 * (sp + qp);
+                    const auto  swm = -st3 * (sm - ot3 * qm),
+                                swp = -st3 * (sp - ot3 * qp);    
+                    const auto  ct = 2. * qm;      
                     const auto  p = P_full(ij),
-                                pkz = PKz(ij),
-                                kzp = KzP(ij),
+                                pkz = p * kz(ij.second),
+                                kzp = kz(ij.first) * p,
                                 es = Es->at(ij);
-                    const auto  rth = std::conj(R_term(ji, kxky)),
-                                cth = std::conj(C_term(ji, kxky));
-                    const auto  stmh = std::conj(Stm_term(ji, kxky)),
-                                stph = std::conj(Stp_term(ji, kxky));  
-                    const auto  swmh = std::conj(Swm_term(ji, kxky)),
-                                swph = std::conj(Swp_term(ji, kxky));
+                    const auto  rth = std::conj(R_term(ji, q2, q1)),
+                                cth = std::conj(C_term(ji, q2, q1));
+                    const auto  qph = Qp_term(ji, q2, q1),
+                                qmh = Qm_term(ji, q2, q1),
+                                sph = Sp_term(ji, q2, q1),
+                                smh = Sm_term(ji, q2, q1); 
+                    const auto  stmh = -st3 * std::conj(smh + qmh),
+                                stph = -st3 * std::conj(sph + qph);
+                    const auto  swmh = -st3 * std::conj(smh - ot3 * qmh),
+                                swph = -st3 * std::conj(sph - ot3 * qph); 
                     std::vector< std::complex<double> > rv = 
                         {
                             tt,                     {0.,0.},                - p * kp / st2,         st2 * pkz / st3,            p * km / (st2 * st3),       {0.,0.},            - pkz / st3,            - p * km / st3,

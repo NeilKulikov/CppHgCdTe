@@ -13,7 +13,7 @@
 #include <matrix.hpp>
 
 namespace vector{
-    std::vector< std::complex<double> > operator* 
+    std::vector< std::complex<double> > dot 
             (std::vector< std::complex<double> >& v, 
             matrix::cmat const & m){
         if(v.size() != m.size())
@@ -34,7 +34,13 @@ namespace vector{
         return rv;
     };
 
-    std::vector< std::complex<double> > operator*  
+    std::vector< std::complex<double> > operator* 
+            (std::vector< std::complex<double> >& v, 
+            matrix::cmat const & m){
+        return dot(v, m);
+    };
+
+    std::vector< std::complex<double> > dot  
             (matrix::cmat const & m,
             std::vector< std::complex<double> >& v){
         if(v.size() != m.size())
@@ -54,7 +60,14 @@ namespace vector{
         );
         return rv;
     };
-    std::complex<double> operator*  
+
+    std::vector< std::complex<double> > operator*  
+            (matrix::cmat const & m,
+            std::vector< std::complex<double> >& v){
+        return dot(m, v);
+    };
+
+    std::complex<double> dot
             (std::vector< std::complex<double> >& a,
             std::vector< std::complex<double> >& b){
         if(a.size() != b.size())
@@ -67,6 +80,13 @@ namespace vector{
         gsl_blas_zdotc(&(acvv.vector), &(bcvv.vector), &rv);
         return matrix::to_std_complex(rv);
     };
+
+    std::complex<double> operator*  
+            (std::vector< std::complex<double> >& a,
+            std::vector< std::complex<double> >& b){
+        return dot(a, b);
+    };
+
     double norm(std::vector< std::complex<double> >& v){
         const auto cvv = gsl_vector_complex_view_array(
                             reinterpret_cast<double*>(v.data()), v.size());
