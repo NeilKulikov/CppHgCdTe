@@ -26,14 +26,24 @@
 namespace hamiltonian{
 
     class hcore : 
-        public materials::model< std::shared_ptr<matrix::herm> >{
+        public materials::model< std::shared_ptr<matrix::cmat> >{
             public:
                 double accuracy = 1.e-6;
                 std::size_t integ_space = 16384;
+                std::shared_ptr<matrix::cmat> P = nullptr;
+                std::shared_ptr<matrix::cmat> Kz = nullptr;
+                std::shared_ptr<matrix::cmat> PKz = nullptr;
+                std::shared_ptr<matrix::cmat> KzP = nullptr;
+                std::shared_ptr<matrix::cmat> AG3Kz = nullptr;
+                std::shared_ptr<matrix::cmat> CKKz = nullptr;
+                std::shared_ptr<matrix::cmat> TFPO = nullptr;
+                std::shared_ptr<matrix::cmat> KzTKz = nullptr;
+                std::shared_ptr<matrix::cmat> KzG2Kz = nullptr;
+                std::shared_ptr<matrix::cmat> KzG1Kz = nullptr;
             protected:
                 double len = 0;
                 std::pair<int, int> blims = {0, 1};
-                std::map< std::string, std::shared_ptr<matrix::herm>& > mapping =
+                std::map< std::string, std::shared_ptr<matrix::cmat>& > mapping =
                     {
                         {"Eg", Eg },
                         {"Es", Es },
@@ -43,7 +53,17 @@ namespace hamiltonian{
                         {"G2", G2 },
                         {"G3", G3 },
                         {"F", F },
-                        {"K", K }
+                        {"K", K },
+                        {"P", P },
+                        {"Kz", Kz },
+                        {"PKz", PKz },
+                        {"KzP", KzP },
+                        {"AG3Kz", AG3Kz },
+                        {"CKKz", CKKz },
+                        {"TFPO", TFPO },
+                        {"KzTKz", TFPO },
+                        {"KzG2Kz", KzG2Kz },
+                        {"KzG1Kz", KzG1Kz }
                     };
                 void fill_model(materials::heterostruct const & hs){
                     std::map< std::string, std::function<double(double)> > flow = 
@@ -71,11 +91,64 @@ namespace hamiltonian{
                                 integ_space,
                                 accuracy);
                             at(it.first) = 
-                                std::shared_ptr<matrix::herm>(new matrix::herm(hmat));
+                                std::shared_ptr<matrix::cmat>(new matrix::herm(hmat));
                         });
                 };
+                void fill_add(void){
+                    std::size_t bsize = 
+                        static_cast<std::size_t>(blims.second - blims.first) + 1;
+                    std::vector< std::complex<double> > ones(bsize, {1., 0.});
+                    {
+                    std::vector< std::complex<double> > kzs(bsize);
+                    std::generate(kzs.begin(), kzs.end(), 
+                        [&, n = blims.first](void) mutable {
+                            const double val = static_cast<double>(n++) * 2. * M_PI / len;
+                            return std::complex<double>{val, 0.};
+                        });
+                    auto kzcmat = matrix::cmat::diagonal(kzs);
+                    Kz = std::shared_ptr<matrix::cmat>(new matrix::herm(kzcmat));
+                    }
+                    {
+                    auto _pmat = matrix::cmat::diagonal(ones) * 
+                        std::complex<double>{std::sqrt(esk * materials::CdHgTe(0.5).Ep), 0.};
+                    P = std::shared_ptr<matrix::herm>(new matrix::herm(_pmat));
+                    }
+                    {
+                    auto _pkz =  (*P) * (*Kz);
+                    PKz = std::shared_ptr<matrix::cmat>(new matrix::cmat(_pkz));
+                    }
+                    {
+                    auto _kzp =  (*Kz) * (*P);
+                    KzP = std::shared_ptr<matrix::cmat>(new matrix::cmat(_kzp));
+                    }
+                    {
+                    auto _ag3kz = ((*G3) * (*Kz)) + ((*Kz) * (*G3));
+                    AG3Kz = std::shared_ptr<matrix::cmat>(new matrix::cmat(_ag3kz));
+                    }
+                    {
+                    auto _ckkz = ((*K) * (*Kz)) - ((*Kz) * (*K));
+                    CKKz = std::shared_ptr<matrix::cmat>(new matrix::cmat(_ckkz));
+                    }
+                    {
+                    auto _tfpo = ((*F) * std::complex<double>{2., 0.})
+                        + matrix::cmat::diagonal(ones);
+                    TFPO = std::shared_ptr<matrix::cmat>(new matrix::herm(_tfpo));
+                    }
+                    {
+                    auto _kztkz = ((*Kz) * (*TFPO)) * (*Kz);
+                    KzTKz = std::shared_ptr<matrix::cmat>(new matrix::cmat(_kztkz));
+                    }
+                    {
+                    auto _kzg2kz = ((*Kz) * (*G2)) * (*Kz);
+                    KzG2Kz = std::shared_ptr<matrix::cmat>(new matrix::cmat(_kzg2kz));
+                    }
+                    {
+                    auto _kzg1kz = ((*Kz) * (*G1)) * (*Kz);
+                    KzG1Kz = std::shared_ptr<matrix::cmat>(new matrix::cmat(_kzg1kz));
+                    }
+                };
             public:
-                std::shared_ptr<matrix::herm>& at(std::string const & in){
+                std::shared_ptr<matrix::cmat>& at(std::string const & in){
                     return mapping.at(in);
                 };
                 hcore(  materials::heterostruct const & hs, 
@@ -85,62 +158,7 @@ namespace hamiltonian{
                     accuracy = acc;
                     blims = {- (basis_size / 2), basis_size / 2};
                     fill_model(hs);
-                };
-                double kz(std::size_t i) const{
-                    const int n = blims.first + static_cast<int>(i);
-                    return 2. * M_PI * static_cast<double>(n) / len;
-                };
-                std::complex<double> Kz(
-                    std::pair<std::size_t, std::size_t> const & ij) const{
-                        const double kzv = 
-                            (ij.first == ij.second) 
-                                ? kz(ij.first) 
-                                : 0.;
-                        return {kzv, 0.};
-                };
-                std::complex<double> P_full(
-                    std::pair<std::size_t, std::size_t> const & ij) const{
-                        return std::sqrt(esk * Ep->at(ij));
-                };
-                std::complex<double> PKz(
-                    std::pair<std::size_t, std::size_t> const & ij) const{
-                        return P_full(ij) * kz(ij.second);
-                };
-                std::complex<double> KzP(
-                    std::pair<std::size_t, std::size_t> const & ij) const{
-                        return kz(ij.first) * P_full(ij);
-                };
-                std::complex<double> AG3Kz(
-                    std::pair<std::size_t, std::size_t> const & ij) const{
-                        const auto g3 = G3->at(ij);
-                        return 
-                            g3 * kz(ij.second) + kz(ij.first) * g3;
-                };
-                std::complex<double> CKKz(
-                    std::pair<std::size_t, std::size_t> const & ij) const{
-                        const auto k = K->at(ij);
-                        return
-                            k * kz(ij.second) - kz(ij.first) * k;
-                };
-                std::complex<double> TFPO(
-                    std::pair<std::size_t, std::size_t> const & ij) const{
-                        const std::complex<double> delta = 
-                            (ij.first == ij.second) ? 
-                                std::complex<double>{1., 0.} : 
-                                std::complex<double>{0., 0.};
-                        return 2. * F->at(ij) + delta;
-                };
-                std::complex<double> KzTKz(
-                    std::pair<std::size_t, std::size_t> const & ij) const{
-                        return kz(ij.first) * TFPO(ij) * kz(ij.second);
-                };
-                std::complex<double> KzG2Kz(
-                    std::pair<std::size_t, std::size_t> const & ij) const{
-                        return kz(ij.first) * G2->at(ij) * kz(ij.second);
-                };
-                std::complex<double> KzG1Kz(
-                    std::pair<std::size_t, std::size_t> const & ij) const{
-                        return kz(ij.first) * G1->at(ij) * kz(ij.second);
+                    fill_add();
                 };
                 std::complex<double> T_term(
                         std::pair<std::size_t, std::size_t> const & ij,
@@ -149,7 +167,7 @@ namespace hamiltonian{
                                     ky = kxky.second;
                     const double    skln = kx * kx + ky * ky;
                     const auto      Ec = Eg->at(ij) + VBO->at(ij);
-                    const auto      Kin = esk * (TFPO(ij) * skln + KzTKz(ij));
+                    const auto      Kin = esk * (TFPO->at(ij) * skln + KzTKz->at(ij));
                     return Ec + Kin;
                 };
                 std::complex<double> U_term(
@@ -159,7 +177,7 @@ namespace hamiltonian{
                                     ky = kxky.second;
                     const double    skln = kx * kx + ky * ky;
                     const auto      Ev = VBO->at(ij);
-                    const auto      Kin = esk * (G1->at(ij) * skln + KzG1Kz(ij));
+                    const auto      Kin = esk * (G1->at(ij) * skln + KzG1Kz->at(ij));
                     return Ev - Kin;
                 };
                 std::complex<double> V_term(
@@ -168,7 +186,7 @@ namespace hamiltonian{
                     const double    kx = kxky.first,
                                     ky = kxky.second;
                     const double    skln = kx * kx + ky * ky;
-                    return - esk * (G2->at(ij) * skln - 2. * KzG2Kz(ij));
+                    return - esk * (G2->at(ij) * skln - 2. * KzG2Kz->at(ij));
                 };
                 std::complex<double> R_term(
                         std::pair<std::size_t, std::size_t> const & ij,
@@ -188,7 +206,7 @@ namespace hamiltonian{
                     const double    kx = kxky.first,
                                     ky = kxky.second;
                     const std::complex<double> km = {kx, -ky};
-                    return esk * 2. * km * CKKz(ij);
+                    return esk * 2. * km * CKKz->at(ij);
                 };
                 std::complex<double> Stp_term(
                         std::pair<std::size_t, std::size_t> const & ij,
@@ -196,7 +214,7 @@ namespace hamiltonian{
                     const double    kx = kxky.first,
                                     ky = kxky.second;
                     const std::complex<double> kp = {kx, ky};
-                    return - esk * st3 * kp * (AG3Kz(ij) + CKKz(ij));
+                    return - esk * st3 * kp * (AG3Kz->at(ij) + CKKz->at(ij));
                 };
                 std::complex<double> Stm_term(
                         std::pair<std::size_t, std::size_t> const & ij,
@@ -204,7 +222,7 @@ namespace hamiltonian{
                     const double    kx = kxky.first,
                                     ky = kxky.second;
                     const std::complex<double> km = {kx, -ky};
-                    return - esk * st3 * km * (AG3Kz(ij) + CKKz(ij));
+                    return - esk * st3 * km * (AG3Kz->at(ij) + CKKz->at(ij));
                 };
                 std::complex<double> Swp_term(
                         std::pair<std::size_t, std::size_t> const & ij,
@@ -212,7 +230,7 @@ namespace hamiltonian{
                     const double    kx = kxky.first,
                                     ky = kxky.second;
                     const std::complex<double> kp = {kx, ky};
-                    return - esk * st3 * kp * (AG3Kz(ij) - ot3 * CKKz(ij));
+                    return - esk * st3 * kp * (AG3Kz->at(ij) - ot3 * CKKz->at(ij));
                 };
                 std::complex<double> Swm_term(
                         std::pair<std::size_t, std::size_t> const & ij,
@@ -220,7 +238,7 @@ namespace hamiltonian{
                     const double    kx = kxky.first,
                                     ky = kxky.second;
                     const std::complex<double> km = {kx, -ky};
-                    return - esk * st3 * km * (AG3Kz(ij) - ot3 * CKKz(ij));
+                    return - esk * st3 * km * (AG3Kz->at(ij) - ot3 * CKKz->at(ij));
                 };
                 matrix::cmat get_hblock(
                         const std::pair<std::size_t, std::size_t> ij,
@@ -240,9 +258,9 @@ namespace hamiltonian{
                                 stp = Stp_term(ij, kxky);  
                     const auto  swm = Swm_term(ij, kxky),
                                 swp = Swp_term(ij, kxky);         
-                    const auto  p = P_full(ij),
-                                pkz = PKz(ij),
-                                kzp = KzP(ij),
+                    const auto  p = P->at(ij),
+                                pkz = PKz->at(ij),
+                                kzp = KzP->at(ij),
                                 es = Es->at(ij);
                     const auto  rth = std::conj(R_term(ji, kxky)),
                                 cth = std::conj(C_term(ji, kxky));

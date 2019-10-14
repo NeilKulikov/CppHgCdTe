@@ -2,6 +2,7 @@
 *.out
 *.so
 *.DS_Store
+*.hdf5
 
 /build/*
 /.vscode/*
