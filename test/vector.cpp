@@ -85,4 +85,21 @@ BOOST_AUTO_TEST_CASE(ApplicationArr)
     BOOST_CHECK_CLOSE(rv[2].imag(), 2.8965e1 , 1.e-2);
 }
 
+BOOST_AUTO_TEST_CASE(ArrScale)
+{
+    std::array< double, 5 > vec = {{1., 2., 3., 4., -5.}};
+    const auto rv = vector::mul(vec, 2.);
+    BOOST_CHECK_CLOSE(rv[0], 2. , 1.e-4);
+    BOOST_CHECK_CLOSE(rv[3], 8. , 1.e-4);
+    BOOST_CHECK_CLOSE(rv[4], -10. , 1.e-4);
+    std::array< std::complex<double>, 3 > cvec = {{
+        {1., 2.}, {3., 4.}, {-5., -3} 
+    }};
+    const auto crv = vector::mul(cvec, 2.);
+    BOOST_CHECK_CLOSE(crv[0].real(), 2. , 1.e-4);
+    BOOST_CHECK_CLOSE(crv[0].imag(), 4. , 1.e-4);
+    BOOST_CHECK_CLOSE(crv[2].real(), -10. , 1.e-4);
+    BOOST_CHECK_CLOSE(crv[2].imag(), -6. , 1.e-4);
+}
+
 BOOST_AUTO_TEST_SUITE_END()

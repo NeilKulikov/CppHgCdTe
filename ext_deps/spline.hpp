@@ -27,10 +27,13 @@ namespace staff{
             ~spline(){
                 gsl_spline_free(spl);
                 gsl_interp_accel_free(acc);
-            }
-            double eval(double x) const {
+            };
+            double eval(double x) const{
                 return gsl_spline_eval(spl, x, acc);
-            }
+            };
+            double operator() (double x) const{
+                return eval(x);
+            };
     };
 };
 

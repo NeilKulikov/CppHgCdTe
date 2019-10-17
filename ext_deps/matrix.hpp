@@ -154,12 +154,15 @@ namespace matrix{
                         gsl_b,
                         c.raw());
                 };
-            cmat operator*(cmat const & a) const {
+            cmat dot(cmat const & a) const {
                 if(size() != a.size())
                     throw std::length_error("Invalid size of matrices");
                 auto rv = cmat(size());
                 gemm(*this, a, rv);
                 return rv;
+            };
+            cmat operator*(cmat const & a) const {
+                return dot(a);
             };
             cmat operator+(cmat const & a) const {
                 if(size() != a.size())
@@ -212,6 +215,17 @@ namespace matrix{
                     gsl_permutation_free(perm);
                 return rv;
             };
+            cmat transpose(void) const{
+                cmat rv(size());
+                gsl_matrix_complex_transpose_memcpy(rv.raw(), raw_const());
+                return rv;
+            };
+    };
+
+    cmat dot(cmat const& a, cmat const& b){
+        cmat rv(a.size());
+        cmat::gemm(a, b, rv);
+        return rv;
     };
 
     void drmat(gsl_matrix* inp){
@@ -301,12 +315,15 @@ namespace matrix{
                         beta,
                         c.raw());
                 };
-            rmat operator*(rmat const & a) const {
+            rmat dot(rmat const & a) const {
                 if(size() != a.size())
                     throw std::length_error("Invalid size of matrices");
                 auto rv = rmat(size());
                 gemm(*this, a, rv);
                 return rv;
+            };
+            rmat operator*(rmat const & a) const {
+                return dot(a);
             };
             rmat operator+(rmat const & a) const {
                 if(size() != a.size())
@@ -358,6 +375,17 @@ namespace matrix{
                     gsl_permutation_free(perm);
                 return rv;
             };
+            rmat transpose(void) const{
+                rmat rv(size());
+                gsl_matrix_transpose_memcpy(rv.raw(), raw_const());
+                return rv;
+            };
+    };
+
+    rmat dot(rmat const& a, rmat const& b){
+        rmat rv(a.size());
+        rmat::gemm(a, b, rv);
+        return rv;
     };
 
     class herm : public cmat{

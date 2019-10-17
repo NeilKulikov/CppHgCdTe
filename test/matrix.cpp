@@ -361,4 +361,50 @@ BOOST_AUTO_TEST_CASE(CInvert)
     BOOST_CHECK_CLOSE(im.at(2, 2).imag(), 0.01970298, 1.e-4);
 }
 
+BOOST_AUTO_TEST_CASE(CInvertComp)
+{
+    std::vector< std::complex<double> > a = 
+        {
+            {1., 123.}, {2., 3.}, {4., 5.},
+            {-3., 4.}, {7., 8.}, {9., -13.},
+            {12., 0.}, {0., 15.}, {17., 18.}
+        };
+    auto am = matrix::cmat(a);
+    auto im = am.inverse();
+    auto cm = im * am;
+    for(std::size_t i = 0; i < cm.size(); i++){
+        for(std::size_t j = 0; j < cm.size(); j++){
+            if(i == j){
+                BOOST_CHECK_CLOSE(cm.at(i, i).real(), 1., 1.e-9);
+                BOOST_CHECK_SMALL(cm.at(i, i).imag(), 1.e-9);
+            }else{
+                BOOST_CHECK_SMALL(std::abs(cm.at(i, j)), 1.e-9);
+            }
+        }
+    }
+}
+
+BOOST_AUTO_TEST_CASE(RInvertComp)
+{
+    std::vector<double> a = 
+        {
+            789., 123., -435, -413,
+            892., -900, -45., -1.,
+            1.e-5, 123., 327, -2.,
+            9085., 14., 12., 1.
+        };
+    auto am = matrix::rmat(a);
+    auto im = am.inverse();
+    auto cm = im * am;
+    for(std::size_t i = 0; i < cm.size(); i++){
+        for(std::size_t j = 0; j < cm.size(); j++){
+            if(i == j){
+                BOOST_CHECK_CLOSE(cm.at(i, i), 1., 1.e-9);
+            }else{
+                BOOST_CHECK_SMALL(std::abs(cm.at(i, j)), 1.e-9);
+            }
+        }
+    }
+}
+
 BOOST_AUTO_TEST_SUITE_END()
