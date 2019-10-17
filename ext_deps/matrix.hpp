@@ -14,6 +14,7 @@
 #include <gsl/gsl_matrix.h>
 #include <gsl/gsl_linalg.h>
 #include <gsl/gsl_complex.h>
+#include <gsl/gsl_permutation.h>
 #include <gsl/gsl_complex_math.h>
 
 namespace matrix{
@@ -197,7 +198,166 @@ namespace matrix{
                         ij.first, ij.second, inp.size(), inp.size());
                     const auto inpv = inp.raw_const();
                     gsl_matrix_complex_memcpy(&curv.matrix, inpv);
-            }
+            };
+            cmat inverse(gsl_permutation* perm = nullptr){
+                bool owner = perm == nullptr;
+                if(owner)
+                    perm = gsl_permutation_alloc(size());
+                auto cp = cmat::copy(*this);
+                auto rv = cmat(size());
+                int signum;
+                gsl_linalg_complex_LU_decomp(cp.raw(), perm, &signum);
+                gsl_linalg_complex_LU_invert(cp.raw_const(), perm, rv.raw());
+                if(owner)
+                    gsl_permutation_free(perm);
+                return rv;
+            };
+    };
+
+    void drmat(gsl_matrix* inp){
+        if(inp != nullptr)
+            gsl_matrix_free(inp);
+    };
+
+    class rmat{
+        protected:
+            std::size_t msiz = 0;
+            std::shared_ptr<gsl_matrix> matr = nullptr;
+            std::shared_ptr<gsl_matrix> alloc(std::size_t s) const {
+                return std::shared_ptr<gsl_matrix>
+                    (gsl_matrix_calloc(s, s), drmat);
+            };
+            void force_assign(double* data){
+                auto gb = new gsl_block{ msiz, data };
+                auto gm = new gsl_matrix;
+                *gm = *matr;
+                gm->data = data;
+                gm->block = gb;
+                matr.~shared_ptr();
+                matr = std::shared_ptr<gsl_matrix>(gm);
+            };
+            gsl_matrix* raw(){
+                return matr.get();
+            };
+        public:
+            gsl_matrix const * raw_const() const {
+                return matr.get();
+            };
+            rmat(std::size_t size = 1){
+                msiz = size;
+                matr = alloc(size);
+            };
+            rmat(std::size_t size, double fill_value) : rmat(size)
+                { gsl_matrix_set_all(matr.get(), fill_value); };
+            rmat(rmat& inp) : msiz(inp.size()), matr(inp.matr){ };
+            rmat(std::vector<double>& inp){
+                msiz = static_cast<std::size_t>(sqrt(inp.size()));
+                if(msiz * msiz != inp.size())
+                    throw std::logic_error("Size of input vector should be square of integer number");
+                matr = alloc(msiz);
+                force_assign(inp.data());
+            };
+            static rmat diagonal(std::vector<double>& in){
+                rmat rv(in.size(), 0.);
+                auto g_inpv = gsl_vector_view_array(
+                    reinterpret_cast<double*>(in.data()), in.size());
+                auto d_view = gsl_matrix_diagonal(rv.raw());
+                gsl_vector_memcpy(&d_view.vector, &g_inpv.vector);
+                return rv;
+            };
+            static rmat copy(rmat const & in){
+                rmat rv(in.size(), 0.);
+                gsl_matrix_memcpy(rv.raw(), in.raw_const());
+                return rv;
+            };
+            double& at_gsl(std::size_t const i, std::size_t const j){
+                return *gsl_matrix_ptr(matr.get(), i, j);
+            };
+            double& at(std::size_t const i, std::size_t const j){
+                return at_gsl(i,j);
+            };
+            double& at(const std::pair<std::size_t, std::size_t> ij){
+                return at(ij.first, ij.second);
+            };
+            std::size_t size() const {
+                return msiz;
+            };
+            static void gemm(  
+                rmat const & a, 
+                rmat const & b,
+                rmat& c,
+                const double alpha = 1., 
+                const double beta  = 0.,
+                CBLAS_TRANSPOSE_t tra = CblasNoTrans,
+                CBLAS_TRANSPOSE_t trb = CblasNoTrans){
+                    if(a.size() != b.size())
+                        throw std::length_error("Matrices should have equal size");
+                    gsl_blas_dgemm(
+                        tra,
+                        trb,
+                        alpha,
+                        a.raw_const(),
+                        b.raw_const(),
+                        beta,
+                        c.raw());
+                };
+            rmat operator*(rmat const & a) const {
+                if(size() != a.size())
+                    throw std::length_error("Invalid size of matrices");
+                auto rv = rmat(size());
+                gemm(*this, a, rv);
+                return rv;
+            };
+            rmat operator+(rmat const & a) const {
+                if(size() != a.size())
+                    throw std::length_error("Invalid size of matrices");
+                auto rv = rmat(size());
+                gsl_matrix_memcpy(rv.raw(), raw_const());
+                gsl_matrix_add(rv.raw(), a.raw_const());
+                return rv;
+            };
+            rmat operator-(rmat const & a) const {
+                if(size() != a.size())
+                    throw std::length_error("Invalid size of matrices");
+                auto rv = rmat(size());
+                gsl_matrix_memcpy(rv.raw(), raw_const());
+                gsl_matrix_sub(rv.raw(), a.raw_const());
+                return rv;
+            };
+            rmat operator*(double const & a){
+                auto rv = rmat(size());
+                gsl_matrix_memcpy(rv.raw(), raw_const());
+                gsl_matrix_scale(rv.raw(), a);
+                return rv;
+            };
+            void print(std::ostream & ost = std::cout){
+                for(std::size_t i = 0; i < msiz; i++){
+                    for(std::size_t j = 0; j < msiz; j++){
+                        ost << '_' << i << ',' << j << '_' << at(i, j) << "_\t";
+                    }
+                    std::cout << std::endl;
+                }
+            };
+            void put_submatrix(rmat& inp,
+                const std::pair<std::size_t, std::size_t> ij){
+                    auto curv = gsl_matrix_submatrix(raw(), 
+                        ij.first, ij.second, inp.size(), inp.size());
+                    const auto inpv = inp.raw_const();
+                    gsl_matrix_memcpy(&curv.matrix, inpv);
+            };
+            rmat inverse(gsl_permutation* perm = nullptr){
+                bool owner = perm == nullptr;
+                if(owner)
+                    perm = gsl_permutation_alloc(size());
+                auto cp = rmat::copy(*this);
+                auto rv = rmat(size());
+                int signum;
+                gsl_linalg_LU_decomp(cp.raw(), perm, &signum);
+                gsl_linalg_LU_invert(cp.raw_const(), perm, rv.raw());
+                if(owner)
+                    gsl_permutation_free(perm);
+                return rv;
+            };
     };
 
     class herm : public cmat{

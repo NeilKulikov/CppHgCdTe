@@ -331,4 +331,34 @@ BOOST_AUTO_TEST_CASE(Copy)
     BOOST_CHECK_CLOSE(bm.at(1, 1).imag(), 67., 1.e-2);
 }
 
+BOOST_AUTO_TEST_CASE(CInvert)
+{
+    std::vector< std::complex<double> > a = 
+        {
+            {1., 0.}, {2., 3.}, {4., 5.},
+            {-3., 4.}, {7., 8.}, {9., -13.},
+            {12., 0.}, {0., 15.}, {17., 18.}
+        };
+    auto am = matrix::cmat(a);
+    auto im = am.inverse();
+    BOOST_CHECK_CLOSE(im.at(0, 0).real(), -0.20802248, 1.e-4);
+    BOOST_CHECK_CLOSE(im.at(0, 0).imag(), -0.04568681, 1.e-4);
+    BOOST_CHECK_CLOSE(im.at(0, 1).real(), -0.01880179, 1.e-4);
+    BOOST_CHECK_CLOSE(im.at(0, 1).imag(), -0.0478055, 1.e-4);
+    BOOST_CHECK_CLOSE(im.at(0, 2).real(), 0.08003293, 1.e-4);
+    BOOST_CHECK_CLOSE(im.at(0, 2).imag(), -0.00187686, 1.e-3);
+    BOOST_CHECK_CLOSE(im.at(1, 0).real(), 0.23913714, 1.e-4);
+    BOOST_CHECK_CLOSE(im.at(1, 0).imag(), 0.02527385, 1.e-4);
+    BOOST_CHECK_CLOSE(im.at(1, 1).real(), 0.00453895, 1.e-4);
+    BOOST_CHECK_CLOSE(im.at(1, 1).imag(), -0.04353086, 1.e-4);
+    BOOST_CHECK_CLOSE(im.at(1, 2).real(), -0.03330365, 1.e-4);
+    BOOST_CHECK_CLOSE(im.at(1, 2).imag(), -0.01450185, 1.e-4);
+    BOOST_CHECK_CLOSE(im.at(2, 0).real(), -0.00948982, 1.e-4);
+    BOOST_CHECK_CLOSE(im.at(2, 0).imag(), -0.16870581, 1.e-4);
+    BOOST_CHECK_CLOSE(im.at(2, 1).real(), 0.00299457, 1.e-3);
+    BOOST_CHECK_CLOSE(im.at(2, 1).imag(), 0.02656939, 1.e-4);
+    BOOST_CHECK_CLOSE(im.at(2, 2).real(), 0.01039592, 1.e-4);
+    BOOST_CHECK_CLOSE(im.at(2, 2).imag(), 0.01970298, 1.e-4);
+}
+
 BOOST_AUTO_TEST_SUITE_END()
