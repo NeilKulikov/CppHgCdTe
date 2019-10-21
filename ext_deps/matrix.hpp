@@ -164,7 +164,7 @@ namespace matrix{
             cmat operator*(cmat const & a) const {
                 return dot(a);
             };
-            cmat operator+(cmat const & a) const {
+            cmat sum(cmat const & a) const {
                 if(size() != a.size())
                     throw std::length_error("Invalid size of matrices");
                 auto rv = cmat(size());
@@ -172,7 +172,10 @@ namespace matrix{
                 gsl_matrix_complex_add(rv.raw(), a.raw_const());
                 return rv;
             };
-            cmat operator-(cmat const & a) const {
+            cmat operator+ (cmat const & a) const {
+                return sum(a);
+            };
+            cmat sub(cmat const & a) const {
                 if(size() != a.size())
                     throw std::length_error("Invalid size of matrices");
                 auto rv = cmat(size());
@@ -180,12 +183,18 @@ namespace matrix{
                 gsl_matrix_complex_sub(rv.raw(), a.raw_const());
                 return rv;
             };
-            cmat operator*(std::complex<double> const & a){
+            cmat operator- (cmat const & a) const {
+                return sub(a);
+            };
+            cmat scale(std::complex<double> const & a){
                 auto rv = cmat(size());
                 gsl_matrix_complex_memcpy(rv.raw(), raw_const());
                 gsl_matrix_complex_scale(rv.raw(), 
                                         to_gsl_complex(a));
                 return rv;
+            };
+            cmat operator* (std::complex<double> const & a){
+                return scale(a);
             };
             void print(std::ostream & ost = std::cout){
                 for(std::size_t i = 0; i < msiz; i++){

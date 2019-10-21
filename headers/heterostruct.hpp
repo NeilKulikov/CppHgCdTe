@@ -26,8 +26,8 @@ class heterostruct{
                     throw std::out_of_range("z should be in interval [0;L]");
                 return spl->eval(z);
             };
-            model<double> at(double z) const {
-                double comp = composition(z);
+            model<double> at(const double z) const {
+                const double comp = composition(z);
                 auto rv = CdHgTe(comp);
                 return rv;
             };

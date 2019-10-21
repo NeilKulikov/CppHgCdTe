@@ -24,11 +24,11 @@
 #include <constants.hpp>
 #include <operators.hpp>
 
-const static std::complex<double> cn = {0., 0.};
-const static std::complex<double> co = {1., 0.};
-const static std::complex<double> ci = {0., 1.};
-
 namespace hamiltonian{
+
+    const static std::complex<double> cn = {0., 0.};
+    const static std::complex<double> co = {1., 0.};
+    const static std::complex<double> ci = {0., 1.};
 
     class hcore : 
         public materials::model< std::shared_ptr<matrix::herm> >{

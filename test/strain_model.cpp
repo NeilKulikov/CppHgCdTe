@@ -50,7 +50,45 @@ BOOST_AUTO_TEST_CASE(StrainTestPure)
     BOOST_CHECK_CLOSE(str.at(0, 0), 3.0959e-3, 1.e-1);
     BOOST_CHECK_CLOSE(str.at(0, 1), 0., 1.e-1);
     BOOST_CHECK_CLOSE(str.at(1, 1), 3.0959e-3, 1.e-1);
-    BOOST_CHECK_CLOSE(str.at(2, 2), -6.5063e-3, 1.e-1);
+    BOOST_CHECK_CLOSE(str.at(2, 2), -4.3301e-3, 1.e-1);
+}
+
+BOOST_AUTO_TEST_CASE(StrainTestImPure)
+{
+    strain::materials::strain str(0.1, 0.65);
+    BOOST_CHECK_CLOSE(str.at(2, 2), -2.3814e-3, 1.e-1);
+}
+
+BOOST_AUTO_TEST_CASE(StrHtr)
+{
+    const std::size_t num = 100;
+    const double len = 20.;
+    std::vector<double> zs(num + 1), xs(num + 1);
+    const double step = len / 
+                static_cast<double>(num);
+    for(std::size_t i = 0; i <= num; i++){
+        zs[i] = step * static_cast<double>(i);
+        xs[i] = 0.5 + 0.45 * std::sin(0.5 * zs[i]);
+    }
+    strain::materials::heterostruct hs(zs, xs);
+    const double bufx = 0.5;
+    //std::cout << "!" << std::endl;
+    strain::materials::strhtr sh(hs, bufx);
+    //std::cout << "!!" << std::endl;
+    const std::size_t anum = 500;
+    const double astep = len / 
+                static_cast<double>(anum);
+    for(std::size_t i = 0; i < anum; i++){
+        //std::cout << "!" << std::endl;
+        const double z = astep * static_cast<double>(i);
+        const auto str_i = sh.get_strain(z).get();
+        //std::cout << "!!" << std::endl;
+        const auto str_b = strain::materials::strain(hs.at(z), bufx).get();
+        //std::cout << i << std::endl;
+        for(std::size_t j = 0; j < 6; j++){
+            BOOST_CHECK_CLOSE(str_i[j], str_b[j], 1.e-1);
+        }
+    }
 }
 
 BOOST_AUTO_TEST_SUITE_END()
