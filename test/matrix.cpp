@@ -230,6 +230,24 @@ BOOST_AUTO_TEST_CASE(HDiag2)
     BOOST_CHECK_CLOSE(ev[2],  17.4288, 1.e-2);
 }
 
+BOOST_AUTO_TEST_CASE(ScaleRaw)
+{
+    std::vector< std::complex<double> > a = 
+        {
+            {8., 0.}, {3., 4.}, {9., -6.},
+            {3., -4.}, {7., 0.}, {5., 4.},
+            {9., 6.}, {5., -4.}, {1., 0.}
+        };
+    auto am = matrix::cmat(a);
+    std::complex<double> mul = {3., 4.};
+    auto bm = am.scale(mul);
+    for(int i = 0; i < 3; i++){
+        for(int j = 0; j < 3; j++){
+            BOOST_CHECK(std::abs(am.at(i, j) * mul - bm.at(i, j)) < 1.e-6);
+        }
+    }
+}
+
 BOOST_AUTO_TEST_CASE(MSub)
 {
     std::vector< std::complex<double> > a = 

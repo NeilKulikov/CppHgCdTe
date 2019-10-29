@@ -38,7 +38,7 @@ void* make_strain_modela(size_t n, double* zs, double* xs, double bufx, size_t n
 };
 
 void* make_strain_model(size_t n, double* zs, double* xs, double bufx){
-    return make_strain_modela(n, zs, xs, bufx, 1024);
+    return make_strain_modela(n, zs, xs, bufx, 4096);
 };
 
 int del_strain_model(void* md){

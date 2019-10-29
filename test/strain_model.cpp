@@ -53,6 +53,15 @@ BOOST_AUTO_TEST_CASE(StrainTestPure)
     BOOST_CHECK_CLOSE(str.at(2, 2), -4.3301e-3, 1.e-1);
 }
 
+BOOST_AUTO_TEST_CASE(StrainTestImPure1)
+{
+    strain::materials::strain str(0.0, 0.7);
+    BOOST_CHECK_CLOSE(str.at(0, 0), 2.16718e-3, 1.e-1);
+    BOOST_CHECK_CLOSE(str.at(0, 1), 0., 1.e-1);
+    BOOST_CHECK_CLOSE(str.at(1, 1), 2.16718e-3, 1.e-1);
+    BOOST_CHECK_CLOSE(str.at(2, 2), -3.03113e-3, 1.e-1);
+}
+
 BOOST_AUTO_TEST_CASE(StrainTestImPure)
 {
     strain::materials::strain str(0.1, 0.65);
@@ -71,6 +80,7 @@ BOOST_AUTO_TEST_CASE(StrHtr)
         xs[i] = 0.5 + 0.45 * std::sin(0.5 * zs[i]);
     }
     strain::materials::heterostruct hs(zs, xs);
+    //std::cout << "HETerostruct" << std::endl;
     const double bufx = 0.5;
     //std::cout << "!" << std::endl;
     strain::materials::strhtr sh(hs, bufx);

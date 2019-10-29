@@ -22,6 +22,8 @@ class heterostruct{
                 return len;
             };
             double composition(double z) const {
+                if(spl.get() == nullptr)
+                    throw std::logic_error("Zero pointer spline in heterostruct");
                 if(!((0. <= z) && (z <= len)))
                     throw std::out_of_range("z should be in interval [0;L]");
                 return spl->eval(z);

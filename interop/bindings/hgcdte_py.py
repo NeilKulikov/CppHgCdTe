@@ -43,7 +43,7 @@ lib.make_hcore.argtypes = [ct.c_void_p, ct.c_size_t]
 
 def make_hcore(md : ct.c_void_p, bs : int = 101):
     "Return raw C pointer to core of hamiltonian"
-    assert bs > 1, "Invalid length"
+    assert bs >= 1, "Invalid length"
     return (lib.make_hcore(md, bs), bs)
 
 lib.make_strain_hcore.restype = ct.c_void_p
@@ -51,7 +51,7 @@ lib.make_strain_hcore.argtypes = [ct.c_void_p, ct.c_size_t]
 
 def make_strain_hcore(md : ct.c_void_p, bs : int = 101):
     "Return raw C pointer to core of hamiltonian"
-    assert bs > 1, "Invalid length"
+    assert bs >= 1, "Invalid length"
     return (lib.make_strain_hcore(md, bs), bs)
 
 lib.del_hcore.restype = ct.c_int
@@ -193,7 +193,7 @@ class hcore:
     def __init__(self, 
             md : model, bs : int = 61, 
             own_ws: bool = True):
-        assert bs > 2, "Invalid basis size"
+        assert bs >= 1, "Invalid basis size"
         self.bsiz = bs
         self.body = make_hcore(md.body, bs)
         self.ws = None if own_ws == False else diag_ws(bs * 8)
@@ -212,7 +212,8 @@ class hcore:
         rv = get_matr((hi[0], 8 * hi[1]))
         del_hinst(hi[0])
         return rv
-    def strain(self):
+    def strain_hinst(self):
         if self.strain != None:
-            return self.strain[0]
+            rv = get_matr((self.strain[0], 8 * self.strain[1]))
+            return rv
         return None

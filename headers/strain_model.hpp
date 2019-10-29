@@ -3,6 +3,7 @@
 
 #include <map>
 #include <array>
+#include <vector>
 #include <string>
 #include <exception>
 #include <algorithm>
@@ -63,6 +64,8 @@ namespace materials{
                 tensor({T(), T(), T(), T(), T(), T()}) {};
             str_mod(std::array<T, 6> const& inp) :
                 tensor(inp) {};
+            str_mod(str_mod<T> const& inp) :
+                tensor(inp.tensor) {};
             static std::size_t index(
                     const std::size_t i, 
                     const std::size_t j){
@@ -129,27 +132,101 @@ namespace materials{
 
     class strhtr{
         friend class str_mod<double>;
+        using grid_type = std::map<double, str_mod<double> >;
         protected:
             heterostruct hs;
             str_mod< std::shared_ptr<staff::spline> > str;
         public:
-            strhtr(
-                heterostruct hs, 
+            double length(void) const{
+                return hs.length();
+            };
+            model<double> get_model(double z) const{
+                return hs.at(z);
+            };
+        protected:
+            static std::pair<double, str_mod<double> > make_point(
+                heterostruct const & hs,
+                const double z,
+                const double bufx = 0.7){
+                    //std::cout << __func__ << std::endl;
+                    //std::cout << length() << std::endl;
+                    const auto mod_c = hs.at(z);
+                    //std::cout << __func__ << std::endl;
+                    const auto str_c = strain(mod_c, bufx);
+                    //std::cout << __func__ << std::endl;
+                    return std::make_pair(z, str_c);
+            };
+            static grid_type ext_grid(
+                heterostruct const & hs,
+                std::vector<double> const& zs, 
+                const double bufx = 0.7){
+                    //std::cout << __func__ << std::endl;
+                    grid_type ret_v;
+                    std::for_each(
+                        zs.cbegin(), 
+                        zs.cend(),
+                        [&](double z){
+                            const auto res_p = 
+                                make_point(hs, z, bufx);
+                            ret_v.emplace(res_p);
+                            //std::cout << "EMPLACE" << std::endl;
+                        });
+                    //std::cout << __func__ << std::endl;
+                    return ret_v;
+            };
+            static grid_type grid(
+                heterostruct const & hs,
                 const double bufx = 0.7,
-                const std::size_t npoints = 1024) : hs(hs){
+                const std::size_t npoints = 1024){
+                    //std::cout << __func__ << std::endl;
                     const double step = hs.length() / 
-                                static_cast<double>(npoints);
-                    str_mod< std::vector<double> > str_v;
+                            static_cast<double>(npoints);
                     std::vector<double> zs;
                     for(std::size_t i = 0; i <= npoints; i++){
                         const double z = step *
                                         static_cast<double>(i);
-                        const auto mod_c = hs.at(z);
-                        const auto str_c = strain(mod_c, bufx).get();
                         zs.push_back(z);
-                        for(std::size_t j = 0; j < 6; j++)
-                            str_v.raw().at(j).push_back(str_c.at(j));
                     }
+                    //std::cout << __func__ << std::endl;
+                    return ext_grid(hs, zs, bufx);
+            };
+            grid_type merge(
+                grid_type const & a,
+                grid_type const & b) const{
+                    grid_type ret_v;
+                    ret_v.insert(a.cbegin(), a.cend());
+                    ret_v.insert(b.cbegin(), b.cend());
+                    return ret_v;
+            };
+        public:
+            strhtr(
+                heterostruct const & hs,
+                grid_type gt): hs(hs){
+                    //std::cout << __func__ << std::endl;
+                    str_mod< std::vector<double> > str_v;
+                    std::vector<double> zs(gt.size());
+                    //std::cout << gt.size() << std::endl;
+                    std::transform(
+                        gt.cbegin(), 
+                        gt.cend(),
+                        zs.begin(),
+                        [&](const auto& p){
+                            //std::cout << p.first << std::endl;
+                            return p.first;
+                        });
+                    //std::cout << __func__ << std::endl;
+                    for(std::size_t j = 0; j < 6; j++){
+                        str_v.raw().at(j) = 
+                                std::vector<double>(gt.size());
+                        std::transform(
+                            gt.cbegin(), 
+                            gt.cend(),
+                            str_v.raw().at(j).begin(),
+                            [&](auto& p){
+                                return p.second.get().at(j);
+                            });
+                    }
+                    //std::cout << __func__ << std::endl;
                     std::transform(
                         str_v.raw().begin(), 
                         str_v.raw().end(), 
@@ -158,19 +235,33 @@ namespace materials{
                             return std::shared_ptr<staff::spline>(
                                                 new staff::spline(zs, xs));
                         });
+                    //std::cout << __func__ << std::endl;
             };
+            strhtr(
+                heterostruct hs, 
+                const double bufx = 0.7,
+                const std::size_t npoints = 1024): 
+                    strhtr(hs, grid(hs, bufx, npoints)) {};
+            strhtr(
+                heterostruct hs,
+                std::vector<double> const& zs,
+                const double bufx = 0.7,
+                const std::size_t npoints = 1024):
+                    strhtr(
+                        hs, 
+                        merge(
+                            grid(hs, bufx, npoints),
+                            ext_grid(hs, zs, bufx)
+                        )
+                    ) {};
             strhtr(
                 std::vector<double> const& zs, 
                 std::vector<double> const& xs,
                 const double bufx = 0.7,
                 const std::size_t npoints = 1024):
-                    strhtr(heterostruct(zs, xs), bufx, npoints) {};
-            double length(void) const{
-                return hs.length();
-            };
-            model<double> get_model(double z) const{
-                return hs.at(z);
-            };
+                    strhtr(
+                        heterostruct(zs, xs), 
+                        zs, bufx, npoints) {};
             strain get_strain(double z) const {
                 std::array<double, 6> rv;
                 std::transform(

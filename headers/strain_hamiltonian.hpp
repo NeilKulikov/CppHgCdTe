@@ -34,11 +34,11 @@ namespace hamiltonian{
             public:
                 double accuracy = 1.e-6;
                 std::size_t integ_space = 16384;
-                std::shared_ptr<matrix::herm> Rterm = nullptr;
-                std::shared_ptr<matrix::herm> Sterm = nullptr;
-                std::shared_ptr<matrix::herm> Tterm = nullptr;
-                std::shared_ptr<matrix::herm> Uterm = nullptr;
-                std::shared_ptr<matrix::herm> Vterm = nullptr;
+                std::shared_ptr<matrix::cmat> Rterm = nullptr;
+                std::shared_ptr<matrix::cmat> Sterm = nullptr;
+                std::shared_ptr<matrix::cmat> Tterm = nullptr;
+                std::shared_ptr<matrix::cmat> Uterm = nullptr;
+                std::shared_ptr<matrix::cmat> Vterm = nullptr;
             protected:
                 std::array< std::shared_ptr<matrix::herm>, 6 > str;
                 double len = 0.;
@@ -91,24 +91,25 @@ namespace hamiltonian{
                     {
                         const auto trace =  (*str[0]) + (*str[2]) + (*str[5]);
                         auto tt = (*Ac) * trace;
-                        Tterm = std::shared_ptr<matrix::herm>(new matrix::herm(tt));
+                        Tterm = std::shared_ptr<matrix::cmat>(new matrix::cmat(tt));
                         auto ut = (*Av) * trace;
-                        Uterm = std::shared_ptr<matrix::herm>(new matrix::herm(ut));
+                        Uterm = std::shared_ptr<matrix::cmat>(new matrix::cmat(ut));
                     }
                     {
-                        auto vcore = (*str[0]) + (*str[2]) - (*str[3]).scale({2., 0.});
-                        auto vt = ((*B) * vcore).scale({0.5, 0.});
-                        Vterm = std::shared_ptr<matrix::herm>(new matrix::herm(vt));
+                        auto vcore = (*str[0]) + (*str[2]) - (*str[5]).scale(2. * co);
+                        auto vt = ((*B) * vcore).scale(0.5 * co);
+                        Vterm = std::shared_ptr<matrix::cmat>(new matrix::cmat(vt));
                     }
                     {
-                        auto st = (*D).scale({-1., 0.}) * 
+                        auto st = (*D).scale(- co) * 
                                                 ((*str[3]) - (*str[4]).scale({0., 1.}));
-                        Sterm = std::shared_ptr<matrix::herm>(new matrix::herm(st));
+                        Sterm = std::shared_ptr<matrix::cmat>(new matrix::cmat(st));
                     }
                     {
-                        auto rt = ((*B).scale({- st3 * 0.5, 0.}) * ((*str[0]) - (*str[2])))
-                            + ((*D).scale({0., 1}) * (*str[1]));
-                        Rterm = std::shared_ptr<matrix::herm>(new matrix::herm(rt));
+                        const double fac = - st3 * 0.5;
+                        auto rt = ((*B).scale(fac * co) * ((*str[0]) - (*str[2])))
+                            + ((*D).scale(ci) * (*str[1]));
+                        Rterm = std::shared_ptr<matrix::cmat>(new matrix::cmat(rt));
                     }
                 };  
             public:
