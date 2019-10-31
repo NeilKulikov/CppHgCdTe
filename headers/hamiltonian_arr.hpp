@@ -223,7 +223,7 @@ namespace hamiltonian{
                             cn,     cn,     cn,         cn,
                             cn,     cn,     cn,         -k2,
                             cn,     cn,     cn,         -ci * k2,
-                            cn,     k2,   ci * k2,    cn
+                            cn,     k2,   ci * k2,      cn
                         };
                     matrix::cmat core(core_vec);
                     auto cq1 = vector::dot(core, q1);
