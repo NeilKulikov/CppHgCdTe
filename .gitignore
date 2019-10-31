@@ -7,5 +7,6 @@
 /build/*
 /.vscode/*
 /interop/bindings/.ipynb_checkpoints
+/interop/bindings/__pycache__
 */__pycache__/*
 */.ipynb_checkpoints
