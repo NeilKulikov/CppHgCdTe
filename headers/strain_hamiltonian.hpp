@@ -137,7 +137,7 @@ namespace hamiltonian{
                                 st = Sterm->at(ij);
                     const auto  rth = std::conj(Rterm->at(ji)),
                                 sth = std::conj(Sterm->at(ji));        
-                    std::vector< std::complex<double> > rv = 
+                    const std::vector< std::complex<double> > rv = 
                         {
                             tt,     cn,     cn,             cn,             cn,             cn,         cn,             cn,
                             cn,     tt,     cn,             cn,             cn,             cn,         cn,             cn,
@@ -148,8 +148,9 @@ namespace hamiltonian{
                             cn,     cn, -sth / st2,      st2 * vt,    st3 * st / st2,    st2 * rt,      ut,             cn,
                             cn,     cn, -st2 * rth,   st3 * sth / st2,  -st2 * vt,       -st / st2,     cn,             ut
                         };
-                    auto am = matrix::cmat(rv);
-                    return matrix::cmat::copy(am);
+                    //auto am = matrix::cmat(rv);
+                    //return matrix::cmat::copy(am);
+                    return matrix::cmat(rv);
                 };
                 matrix::herm full_h(void) const{
                     std::size_t bsize = 

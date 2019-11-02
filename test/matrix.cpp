@@ -97,6 +97,44 @@ BOOST_AUTO_TEST_CASE(MatrixFromArray2)
     BOOST_CHECK_CLOSE(mat.at(2, 2).real(), 8.87, 1.e-4);
 }
 
+BOOST_AUTO_TEST_CASE(MatrixFromArray2Copy)
+{
+    const std::vector< std::complex<double> > data = 
+        {
+            {0.123, 3.54}, {345., -127.}, {1e-5, 1e-2},
+            {0.789, 4.59}, {10.1, 7.891}, {678., 1.e8},
+            {5.291, 5.78}, {0.02, 7.101}, {8.87, 12.4}
+        };
+    auto mat = matrix::cmat(data);
+    BOOST_CHECK_CLOSE(mat.at(2, 1).imag(), 7.101, 1.e-4);
+    BOOST_CHECK_CLOSE(mat.at(0, 0).real(), 0.123, 1.e-4);
+    BOOST_CHECK_CLOSE(mat.at(0, 0).imag(), 3.54, 1.e-4);
+    BOOST_CHECK_CLOSE(mat.at(1, 2).real(), 678., 1.e-4);
+    BOOST_CHECK_CLOSE(mat.at(2, 2).real(), 8.87, 1.e-4);
+}
+
+BOOST_AUTO_TEST_CASE(real_imag_copy)
+{
+    std::vector<double> vec = 
+        {
+            1., 2., 3., 4.,
+            -5., -6., -7., -8.,
+            9., 10., 11., 12.,
+            -13., -14., -15., -16.
+        };
+    matrix::rmat        inp(vec);
+    matrix::cmat        rm = matrix::cmat::real_copy(inp),
+                        im = matrix::cmat::imag_copy(inp);
+    for(std::size_t i = 0; i < 4; i++){
+        for(std::size_t j = 0; j < 4; j++){
+            BOOST_CHECK_CLOSE(rm.at(i, j).real(), inp.at(i, j), 1.e-4);
+            BOOST_CHECK(std::abs(rm.at(i, j).imag()) < 1.e-4);
+            BOOST_CHECK_CLOSE(im.at(i, j).imag(), inp.at(i, j), 1.e-4);
+            BOOST_CHECK(std::abs(im.at(i, j).real()) < 1.e-4);
+        }
+    }
+}
+
 BOOST_AUTO_TEST_CASE(MatrixFromMatrix)
 {
     std::vector< std::complex<double> > data = 
@@ -223,6 +261,31 @@ BOOST_AUTO_TEST_CASE(HDiag2)
             {9., 6.}, {5., -4.}, {1., 0.}
         };
     auto am = matrix::cmat(a);
+    auto cm = matrix::cmat::copy(am);
+    auto ah = matrix::herm(am);
+    auto ev = ah.diagonalize_v();
+    auto lambda = matrix::rmat::diagonal(ev.first);
+    lambda.print();
+    auto rv = 
+        ev.second * 
+        matrix::cmat::real_copy(lambda) *
+        ev.second.conjugate();
+    rv.print();
+    for(std::size_t i = 0; i < rv.size(); i++){
+        for(std::size_t j = 0; j < rv.size(); j++)
+            BOOST_CHECK(std::abs(rv.at(i, j) - cm.at(i, j)) <  1.e-6);
+    }
+}
+
+BOOST_AUTO_TEST_CASE(HDiag3)
+{
+    const std::vector< std::complex<double> > a = 
+        {
+            {8., 0.}, {3., 4.}, {9., -6.},
+            {3., -4.}, {7., 0.}, {5., 4.},
+            {9., 6.}, {5., -4.}, {1., 0.}
+        };
+    auto am = matrix::cmat(a);
     auto ah = matrix::herm(am);
     auto ev = ah.diagonalize();
     BOOST_CHECK_CLOSE(ev[0], -10.0743, 1.e-2);
@@ -269,7 +332,7 @@ BOOST_AUTO_TEST_CASE(MSub)
     BOOST_CHECK_CLOSE(am.at(1, 2).imag(), 4., 1.e-2);
     BOOST_CHECK_CLOSE(am.at(1, 1).real(), 7., 1.e-2);
     am.put_submatrix(bm, {0, 0});
-    am.print();
+    //am.print();
     BOOST_CHECK_CLOSE(am.at(0, 0).real(), 123., 1.e-2);
     BOOST_CHECK_CLOSE(am.at(0, 0).imag(), 345., 1.e-2);
     BOOST_CHECK_CLOSE(am.at(2, 2).imag(), 17., 1.e-2);

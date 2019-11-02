@@ -12,6 +12,8 @@ extern "C"{
     void* make_hcore(void* model, size_t bsize);
     void* make_hcorea(void* model, size_t bsize, double acc);
     int del_hcore(void* hc);
+    void* make_rotation(double a, double b, double c);
+    int del_rotation(void* rot);
     void* make_strain_hcore(void* model, size_t bsize);
     void* make_strain_hcorea(void* model, size_t bsize, double acc);
     int del_strain_hcore(void* hc);

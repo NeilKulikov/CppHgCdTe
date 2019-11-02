@@ -443,6 +443,30 @@ namespace vector{
             return mul(vec, num);
     };
 
+    std::vector< std::complex<double> > real_copy(
+        std::vector<double> const& vec){
+            std::vector< std::complex<double> > rv(vec.size());
+            std::transform(
+                vec.cbegin(),
+                vec.cend(),
+                rv.begin(),
+                [](double x){ return std::complex<double>{x, 0.}; }
+            );
+            return rv;
+    };
+
+    std::vector< std::complex<double> > imag_copy(
+        std::vector<double> const& vec){
+            std::vector< std::complex<double> > rv(vec.size());
+            std::transform(
+                vec.cbegin(),
+                vec.cend(),
+                rv.begin(),
+                [](double x){ return std::complex<double>{0., x}; }
+            );
+            return rv;
+    };
+
     template<std::size_t size>
     std::array<double, size> mul(
         std::array<double, size> const& vec, 
@@ -489,6 +513,32 @@ namespace vector{
         const std::complex<double> num,
         std::array< std::complex<double>, size > const& vec){
             return mul(vec, num);
+    };
+
+    template<std::size_t size>
+    std::array< std::complex<double>, size > real_copy(
+        std::array<double, size> const& vec){
+            std::array< std::complex<double>, size > rv;
+            std::transform(
+                vec.cbegin(),
+                vec.cend(),
+                rv.begin(),
+                [](double x){ return std::complex<double>{x, 0.}; }
+            );
+            return rv;
+    };
+
+    template<std::size_t size>
+    std::array< std::complex<double>, size > imag_copy(
+        std::array<double, size> const& vec){
+            std::array< std::complex<double>, size > rv;
+            std::transform(
+                vec.cbegin(),
+                vec.cend(),
+                rv.begin(),
+                [](double x){ return std::complex<double>{0., x}; }
+            );
+            return rv;
     };
 };
 

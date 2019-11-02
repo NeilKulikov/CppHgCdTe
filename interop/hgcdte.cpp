@@ -7,6 +7,8 @@
 
 #include <matrix.hpp>
 
+#include <rotations.hpp>
+
 #include <model.hpp>
 #include <hamiltonian.hpp>
 
@@ -44,6 +46,18 @@ void* make_strain_model(size_t n, double* zs, double* xs, double bufx){
 int del_strain_model(void* md){
     auto mp = reinterpret_cast<strain::materials::strhtr*>(md);
     delete mp;
+    return 0;
+};
+
+void* make_rotation(double a, double b, double c){
+    auto* rot = new rotations::rotator(a, b, c);
+    return reinterpret_cast<void*>(rot);
+};
+
+int del_rotation(void* rot){
+    auto* td = 
+        reinterpret_cast<rotations::rotator*>(rot);
+    delete td;
     return 0;
 };
 

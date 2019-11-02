@@ -21,6 +21,7 @@
 #include <model.hpp>
 #include <matrix.hpp>
 #include <vector.hpp>
+#include <rotations.hpp>
 #include <constants.hpp>
 #include <operators.hpp>
 
@@ -361,18 +362,37 @@ namespace hamiltonian{
                         q2 = {co, kxky.first, kxky.second, {kz(ij.second), 0.}};
                     return Swm_term(ij, q1, q2);
                 };
+                std::vector< std::complex<double> > k_vec(
+                    const std::size_t& i,
+                    const std::pair<double, double>& kxky,
+                    std::shared_ptr<rotations::rotator> rot = nullptr) const {
+                        std::vector< double > rv = 
+                                    {kxky.first, kxky.second, kz(i)};
+                        if(rot != nullptr){
+                            using namespace vector;
+                            return real_copy(rot->v_rot * rv);
+                        }
+                        return vector::real_copy(rv);
+                };
+                std::vector< std::complex<double> > q_vec(
+                    const std::size_t& i,
+                    const std::pair<double, double>& kxky,
+                    std::shared_ptr<rotations::rotator> rot = nullptr) const {
+                        const auto kv = k_vec(i, kxky, rot);
+                        return {co, kv[0], kv[1], kv[2]};
+                };
                 matrix::cmat get_hblock(
-                        const std::pair<std::size_t, std::size_t> ij,
-                        const std::pair<double, double> kxky) const {
+                        const std::pair<std::size_t, std::size_t>& ij,
+                        const std::pair<double, double>& kxky,
+                        std::shared_ptr<rotations::rotator> rot = nullptr) const {
                     const auto ji = std::make_pair(ij.second, ij.first);
                     const auto  kx = kxky.first,
                                 ky = kxky.second;
                     const std::complex<double>
                                 kp = {kx, ky},
                                 km = {kx, -ky};
-                    std::vector< std::complex<double> >
-                        q1 = {co, kxky.first, kxky.second, {kz(ij.first), 0.}},
-                        q2 = {co, kxky.first, kxky.second, {kz(ij.second), 0.}};
+                    auto    q1 = q_vec(ij.first, kxky, rot),
+                            q2 = q_vec(ij.second, kxky, rot);
                     const auto  tt = T_term(ij, q1, q2),
                                 ut = U_term(ij, q1, q2),
                                 vt = V_term(ij, q1, q2),
@@ -400,7 +420,7 @@ namespace hamiltonian{
                                 stph = -st3 * std::conj(sph + qph);
                     const auto  swmh = -st3 * std::conj(smh - ot3 * qmh),
                                 swph = -st3 * std::conj(sph - ot3 * qph); 
-                    std::vector< std::complex<double> > rv = 
+                    const std::vector< std::complex<double> > rv = 
                         {
                             tt,                     {0.,0.},                - p * kp / st2,         st2 * pkz / st3,            p * km / (st2 * st3),       {0.,0.},            - pkz / st3,            - p * km / st3,
                             {0., 0},                tt,                     {0., 0.},               - p * kp / (st2 * st3),     st2 * pkz / st3,            p * km / st2,       - p * kp / st3,         pkz / st3,
@@ -411,24 +431,28 @@ namespace hamiltonian{
                             - kzp / st3,            - km * p / st3,         stmh / st2,             st2 * vt,                   - st3 * swph / st2,         st2 * rt,           ut - es,                ct,
                             - kp * p / st3,         kzp / st3,              - st2 * rth,            - st3 * swmh / st2,         - st2 * vt,                 stph / st2,         cth,                    ut - es    
                         };
-                    auto am = matrix::cmat(rv);
-                    return matrix::cmat::copy(am);
+                    const auto am = matrix::cmat(rv);
+                    if(rot != nullptr)
+                        return (rot->cr_rot * am * rot->c_rot);
+                    return am;
                 };
-            matrix::herm full_h(const std::pair<double, double> kxky) const{
-                std::size_t bsize = 
+            matrix::herm full_h(
+                const std::pair<double, double> kxky,
+                std::shared_ptr<rotations::rotator> rot = nullptr) const{
+                    std::size_t bsize = 
                         static_cast<std::size_t>(blims.second - blims.first + 1);
-                matrix::cmat rv(8 * bsize);
-                for(std::size_t r = 0; r < bsize; r++){
-                    std::size_t i = r * 8;
-                    for(std::size_t c = r; c < bsize; c++){
-                        std::size_t j = c * 8;
-                        auto ham = get_hblock({r, c}, kxky);
-                        rv.put_submatrix(ham, {i, j});
+                    matrix::cmat rv(8 * bsize);
+                    for(std::size_t r = 0; r < bsize; r++){
+                        const std::size_t i = r * 8;
+                        for(std::size_t c = r; c < bsize; c++){
+                            const std::size_t j = c * 8;
+                            auto ham = get_hblock({r, c}, kxky, rot);
+                            rv.put_submatrix(ham, {i, j});
+                        }
                     }
-                }
-                auto ret_val = matrix::herm(rv);
-                //ret_val.print();
-                return ret_val;
+                    auto ret_val = matrix::herm(rv);
+                    //ret_val.print();
+                    return ret_val;
             };
     };
 };
