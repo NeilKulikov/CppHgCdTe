@@ -12,12 +12,13 @@ extern "C"{
     void* make_hcore(void* model, size_t bsize);
     void* make_hcorea(void* model, size_t bsize, double acc);
     int del_hcore(void* hc);
-    void* make_rotation(double a, double b, double c);
-    int del_rotation(void* rot);
+    void* make_rotator(double a, double b, double c);
+    int del_rotator(void* rot);
     void* make_strain_hcore(void* model, size_t bsize);
     void* make_strain_hcorea(void* model, size_t bsize, double acc);
     int del_strain_hcore(void* hc);
     void* make_hinst(void* hcore, double kx, double ky);
+    void* make_hinstr(void* hcore, double kx, double ky, void* rot);
     void* make_strain_hinst(void* hcore);
     void* make_strain_hinst_full(size_t n, double* zs, double* xs, double bufx);
     int del_hinst(void* hc);

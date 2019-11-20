@@ -49,12 +49,12 @@ int del_strain_model(void* md){
     return 0;
 };
 
-void* make_rotation(double a, double b, double c){
+void* make_rotator(double a, double b, double c){
     auto* rot = new rotations::rotator(a, b, c);
     return reinterpret_cast<void*>(rot);
 };
 
-int del_rotation(void* rot){
+int del_rotator(void* rot){
     auto* td = 
         reinterpret_cast<rotations::rotator*>(rot);
     delete td;
@@ -98,13 +98,18 @@ void* make_hcore(void* model, size_t bsize){
 void* make_strain_hcore(void* model, size_t bsize){
     return make_strain_hcorea(model, bsize, 1.e-7);
 };
-    
-void* make_hinst(void* hcore, double kx, double ky){
-    auto hc = reinterpret_cast<hamiltonian::hcore*>(hcore);
+
+void* make_hinstr(void* hcore, double kx, double ky, void* rotator){
+    auto* hc = reinterpret_cast<hamiltonian::hcore*>(hcore);
+    auto* rt = reinterpret_cast<rotations::rotator*>(rotator);
     std::pair<double, double> momentum{kx, ky};
-    auto hf = hc->full_h(momentum);
+    auto hf = hc->full_h(momentum, rt);
     auto rv = new matrix::herm(hf);
     return reinterpret_cast<void*>(rv);
+};
+    
+void* make_hinst(void* hcore, double kx, double ky){
+    return make_hinstr(hcore, kx, ky, nullptr);
 };
 
 void* make_strain_hinst(void* hcore){

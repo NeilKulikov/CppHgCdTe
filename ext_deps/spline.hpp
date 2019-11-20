@@ -15,7 +15,9 @@ namespace staff{
             gsl_spline* spl = nullptr;
             gsl_interp_accel* acc = nullptr;
         public:
-            spline(std::vector<double> const & xs, std::vector<double> const & ys,
+            spline(
+                std::vector<double> const & xs, 
+                std::vector<double> const & ys,
                 gsl_interp_type const * type = gsl_interp_linear){
                     len = xs.size();
                     if(xs.size() != ys.size())
@@ -31,10 +33,17 @@ namespace staff{
             double eval(double x) const{
                 return gsl_spline_eval(spl, x, acc);
             };
+            double eval_dx(double x) const{
+                return gsl_spline_eval_deriv(spl, x, acc);
+            };
+            double eval_dxx(double x) const{
+                return gsl_spline_eval_deriv2(spl, x, acc);
+            };
             double operator() (double x) const{
                 return eval(x);
             };
     };
+
 };
 
 #endif

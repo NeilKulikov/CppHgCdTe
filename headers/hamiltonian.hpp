@@ -34,10 +34,10 @@ namespace hamiltonian{
     class hcore : 
         public materials::model< std::shared_ptr<matrix::herm> >{
             public:
-                double accuracy = 1.e-6;
-                std::size_t integ_space = 16384;
+                const double accuracy = 1.e-6;
+                const std::size_t integ_space = 16384;
             protected:
-                double len = 0;
+                const double len = 0;
                 std::pair<int, int> blims = {0, 1};
                 std::map< std::string, std::shared_ptr<matrix::herm>& > mapping =
                     {
@@ -65,9 +65,6 @@ namespace hamiltonian{
                             {"K", [&](double x){ return hs.at(x).K; } }
                         };
                     std::for_each(
-#ifdef USE_PSTL
-                        std::execution::par,
-#endif
                         flow.begin(), flow.end(),
                         [&](auto& it){
                             auto hmat = operators::pw_matr(
@@ -86,12 +83,14 @@ namespace hamiltonian{
                 };
                 hcore(  materials::heterostruct const & hs, 
                         std::size_t basis_size = 101,
-                        const double acc = 1.e-6){
-                    len = hs.length();
-                    accuracy = acc;
-                    blims = {- (basis_size / 2), basis_size / 2};
+                        const double acc = 1.e-6) : 
+                            accuracy(acc), len(hs.length()), 
+                            blims({- (basis_size / 2), basis_size / 2}){
                     fill_model(hs);
                 };
+                /*hcore(hcore& hc):
+                    Eg(hc.Eg), Es(hc.Es), Ep(hc.Ep), VBO(hc.VBO),
+                    G1(hc.G1), G2(hc.G2), G3(hc.G3), F(hc.F), K(hc.K) {};*/
                 double kz(std::size_t i) const{
                     const int n = blims.first + static_cast<int>(i);
                     return 2. * M_PI * static_cast<double>(n) / len;
@@ -125,14 +124,6 @@ namespace hamiltonian{
                     auto cq1 = vector::dot(core, q1);
                     return vector::dot(q2, cq1);
                 };
-                std::complex<double> T_term(
-                        std::pair<std::size_t, std::size_t> const & ij,
-                        std::pair<double, double> const & kxky) const{
-                    std::vector< std::complex<double> >
-                        q1 = {co, kxky.first, kxky.second, {kz(ij.first), 0.}},
-                        q2 = {co, kxky.first, kxky.second, {kz(ij.second), 0.}};
-                    return T_term(ij, q1, q2);
-                };
                 std::complex<double> U_term(
                         std::pair<std::size_t, std::size_t> const & ij,
                         std::vector< std::complex<double> >& q1,
@@ -150,14 +141,6 @@ namespace hamiltonian{
                     auto cq1 = vector::dot(core, q1);
                     return vector::dot(q2, cq1);
                 };
-                std::complex<double> U_term(
-                        std::pair<std::size_t, std::size_t> const & ij,
-                        std::pair<double, double> const & kxky) const{
-                    std::vector< std::complex<double> >
-                        q1 = {co, kxky.first, kxky.second, {kz(ij.first), 0.}},
-                        q2 = {co, kxky.first, kxky.second, {kz(ij.second), 0.}};
-                    return U_term(ij, q1, q2);
-                };
                 std::complex<double> V_term(
                         std::pair<std::size_t, std::size_t> const & ij,
                         std::vector< std::complex<double> >& q1,
@@ -173,14 +156,6 @@ namespace hamiltonian{
                     matrix::cmat core(core_vec);
                     auto cq1 = vector::dot(core, q1);
                     return vector::dot(q2, cq1);
-                };
-                std::complex<double> V_term(
-                        std::pair<std::size_t, std::size_t> const & ij,
-                        std::pair<double, double> const & kxky) const{
-                    std::vector< std::complex<double> >
-                        q1 = {co, kxky.first, kxky.second, {kz(ij.first), 0.}},
-                        q2 = {co, kxky.first, kxky.second, {kz(ij.second), 0.}};
-                    return V_term(ij, q1, q2);
                 };
                 std::complex<double> Rp_term(
                         std::pair<std::size_t, std::size_t> const & ij,
@@ -219,14 +194,6 @@ namespace hamiltonian{
                         std::vector< std::complex<double> >& q1,
                         std::vector< std::complex<double> >& q2) const{
                     return -st3 * (Rp_term(ij, q1, q2) - Rm_term(ij, q1, q2));
-                };
-                std::complex<double> R_term(
-                        std::pair<std::size_t, std::size_t> const & ij,
-                        std::pair<double, double> const & kxky) const{
-                    std::vector< std::complex<double> >
-                        q1 = {co, kxky.first, kxky.second, {kz(ij.first), 0.}},
-                        q2 = {co, kxky.first, kxky.second, {kz(ij.second), 0.}};
-                    return R_term(ij, q1, q2);
                 };
                 std::complex<double> Qm_term(
                         std::pair<std::size_t, std::size_t> const & ij,
@@ -298,27 +265,11 @@ namespace hamiltonian{
                         std::vector< std::complex<double> >& q2) const{
                     return 2. * Qm_term(ij, q1, q2);
                 };
-                std::complex<double> C_term(
-                        std::pair<std::size_t, std::size_t> const & ij,
-                        std::pair<double, double> const & kxky) const{
-                    std::vector< std::complex<double> >
-                        q1 = {co, kxky.first, kxky.second, {kz(ij.first), 0.}},
-                        q2 = {co, kxky.first, kxky.second, {kz(ij.second), 0.}};
-                    return C_term(ij, q1, q2);
-                };
                 std::complex<double> Stp_term(
                         std::pair<std::size_t, std::size_t> const & ij,
                         std::vector< std::complex<double> >& q1,
                         std::vector< std::complex<double> >& q2) const{
                     return -st3 * (Sp_term(ij, q1, q2) + Qp_term(ij, q1, q2));
-                };
-                std::complex<double> Stp_term(
-                        std::pair<std::size_t, std::size_t> const & ij,
-                        std::pair<double, double> const & kxky) const{
-                    std::vector< std::complex<double> >
-                        q1 = {co, kxky.first, kxky.second, {kz(ij.first), 0.}},
-                        q2 = {co, kxky.first, kxky.second, {kz(ij.second), 0.}};
-                    return Stp_term(ij, q1, q2);
                 };
                 std::complex<double> Stm_term(
                         std::pair<std::size_t, std::size_t> const & ij,
@@ -326,27 +277,11 @@ namespace hamiltonian{
                         std::vector< std::complex<double> >& q2) const{
                     return -st3 * (Sm_term(ij, q1, q2) + Qm_term(ij, q1, q2));
                 };
-                std::complex<double> Stm_term(
-                        std::pair<std::size_t, std::size_t> const & ij,
-                        std::pair<double, double> const & kxky) const{
-                    std::vector< std::complex<double> >
-                        q1 = {co, kxky.first, kxky.second, {kz(ij.first), 0.}},
-                        q2 = {co, kxky.first, kxky.second, {kz(ij.second), 0.}};
-                    return Stm_term(ij, q1, q2);
-                };
                 std::complex<double> Swp_term(
                         std::pair<std::size_t, std::size_t> const & ij,
                         std::vector< std::complex<double> >& q1,
                         std::vector< std::complex<double> >& q2) const{
                     return -st3 * (Sp_term(ij, q1, q2) - ot3 * Qp_term(ij, q1, q2));
-                };
-                std::complex<double> Swp_term(
-                        std::pair<std::size_t, std::size_t> const & ij,
-                        std::pair<double, double> const & kxky) const{
-                    std::vector< std::complex<double> >
-                        q1 = {co, kxky.first, kxky.second, {kz(ij.first), 0.}},
-                        q2 = {co, kxky.first, kxky.second, {kz(ij.second), 0.}};
-                    return Swp_term(ij, q1, q2);
                 };
                 std::complex<double> Swm_term(
                         std::pair<std::size_t, std::size_t> const & ij,
@@ -354,37 +289,28 @@ namespace hamiltonian{
                         std::vector< std::complex<double> >& q2) const{
                     return -st3 * (Sm_term(ij, q1, q2) - ot3 * Qm_term(ij, q1, q2));
                 };
-                std::complex<double> Swm_term(
-                        std::pair<std::size_t, std::size_t> const & ij,
-                        std::pair<double, double> const & kxky) const{
-                    std::vector< std::complex<double> >
-                        q1 = {co, kxky.first, kxky.second, {kz(ij.first), 0.}},
-                        q2 = {co, kxky.first, kxky.second, {kz(ij.second), 0.}};
-                    return Swm_term(ij, q1, q2);
-                };
                 std::vector< std::complex<double> > k_vec(
                     const std::size_t& i,
                     const std::pair<double, double>& kxky,
-                    std::shared_ptr<rotations::rotator> rot = nullptr) const {
+                    rotations::rotator* rot = nullptr) const {
                         std::vector< double > rv = 
                                     {kxky.first, kxky.second, kz(i)};
-                        if(rot != nullptr){
-                            using namespace vector;
-                            return real_copy(rot->v_rot * rv);
-                        }
+                        if(rot != nullptr)
+                            return vector::real_copy(
+                                        rot->transform_vector(rv));
                         return vector::real_copy(rv);
                 };
                 std::vector< std::complex<double> > q_vec(
                     const std::size_t& i,
                     const std::pair<double, double>& kxky,
-                    std::shared_ptr<rotations::rotator> rot = nullptr) const {
+                    rotations::rotator* rot = nullptr) const {
                         const auto kv = k_vec(i, kxky, rot);
                         return {co, kv[0], kv[1], kv[2]};
                 };
                 matrix::cmat get_hblock(
                         const std::pair<std::size_t, std::size_t>& ij,
                         const std::pair<double, double>& kxky,
-                        std::shared_ptr<rotations::rotator> rot = nullptr) const {
+                        rotations::rotator* rot = nullptr) const {
                     const auto ji = std::make_pair(ij.second, ij.first);
                     const auto  kx = kxky.first,
                                 ky = kxky.second;
@@ -433,13 +359,13 @@ namespace hamiltonian{
                         };
                     const auto am = matrix::cmat(rv);
                     if(rot != nullptr)
-                        return (rot->cr_rot * am * rot->c_rot);
+                        return rot->transform_hamiltonian(am);
                     return am;
                 };
             matrix::herm full_h(
                 const std::pair<double, double> kxky,
-                std::shared_ptr<rotations::rotator> rot = nullptr) const{
-                    std::size_t bsize = 
+                rotations::rotator* rot = nullptr) const{
+                    const std::size_t bsize = 
                         static_cast<std::size_t>(blims.second - blims.first + 1);
                     matrix::cmat rv(8 * bsize);
                     for(std::size_t r = 0; r < bsize; r++){
@@ -451,10 +377,17 @@ namespace hamiltonian{
                         }
                     }
                     auto ret_val = matrix::herm(rv);
-                    //ret_val.print();
                     return ret_val;
             };
     };
+
+    /*class rhcore: public hcore{
+        using rtt = rotations::rotator;
+        public:
+            const rtt rot;
+            rhcore(hcore& hc, const rtt& _rot):
+                rot(_rot), hcore(hc)
+    };*/
 };
 
 #endif

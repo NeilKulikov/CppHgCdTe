@@ -5,6 +5,8 @@
 #include <array>
 #include <vector>
 #include <algorithm>
+#include <exception>
+#include <functional>
 
 #include <matrix.hpp>
 #include <vector.hpp>
@@ -31,14 +33,14 @@ namespace rotations{
                     },
             jcx =   {
                         cn,         st3 * co,           cn,         cn,
-                        st3 * cn,         cn,      2. * co,         cn,
+                        st3 * co,         cn,      2. * co,         cn,
                         cn,          2. * co,           cn,   st3 * co,
                         cn,               cn,     st3 * co,         cn
                     },
             jcy =   {
                         cn,        -st3 * ci,           cn,         cn,
                         st3 * ci,         cn,     -2. * ci,         cn,
-                        cn,          2. * ci,           cn,   st3 * ci,
+                        cn,          2. * ci,           cn,  -st3 * ci,
                         cn,               cn,     st3 * ci,         cn
                     },
             jcz =   {
@@ -82,8 +84,8 @@ namespace rotations{
                             cosx = cos(phi);
             const std::vector<double> core = 
                 {
-                    cosx,  -sinx,   0.,
-                    sinx,   cosx,   0.,
+                    cosx,   sinx,   0.,
+                   -sinx,   cosx,   0.,
                       0.,     0.,   1. 
                 };
             return matrix::rmat(core);
@@ -120,9 +122,9 @@ namespace rotations{
     matrix::cmat J12_rot(
         const std::array<double, 3> ang = {0., 0., 0.}){
             return 
-                inner::exp_rot(inner::sz, ci * ang[2]) *
-                inner::exp_rot(inner::sy, ci * ang[1]) *
-                inner::exp_rot(inner::sz, ci * ang[0]);
+                inner::exp_rot(inner::sz, - ci * ang[2]) *
+                inner::exp_rot(inner::sy, - ci * ang[1]) *
+                inner::exp_rot(inner::sz, - ci * ang[0]);
     };
     matrix::cmat J12_rot(
         const double alpha = 0., 
@@ -134,9 +136,9 @@ namespace rotations{
     matrix::cmat J32_rot(
         const std::array<double, 3> ang = {0., 0., 0.}){
             return 
-                inner::exp_rot(inner::jz, ci * ang[2]) *
-                inner::exp_rot(inner::jy, ci * ang[1]) *
-                inner::exp_rot(inner::jz, ci * ang[0]);
+                inner::exp_rot(inner::jz, - ci * ang[2]) *
+                inner::exp_rot(inner::jy, - ci * ang[1]) *
+                inner::exp_rot(inner::jz, - ci * ang[0]);
     };
     matrix::cmat J32_rot(
         const double alpha = 0., 
@@ -152,8 +154,14 @@ namespace rotations{
                     J32 = J32_rot(ang);
             rv.put_submatrix(J12, {0, 0});
             rv.put_submatrix(J32, {2, 2});
-            rv.put_submatrix(J12, {5, 5});
+            rv.put_submatrix(J12, {6, 6});
             return rv;
+    };
+    matrix::cmat ham_rot(
+        const double alpha = 0., 
+        const double beta = 0., 
+        const double gamma = 0.){
+            return ham_rot({alpha, beta, gamma});
     };
 
     class rotator{
@@ -166,12 +174,28 @@ namespace rotations{
             rotator(const std::array<double, 3>& ags) : 
                 angles(ags), 
                 v_rot(vec_rot(angles)), vr_rot(v_rot.transpose()),
-                c_rot(ham_rot(angles)), cr_rot(c_rot.conjugate()) {};
+                c_rot(ham_rot(angles)), cr_rot(c_rot.conjugate()) {
+                    std::cout << "Rotator:" << std::endl;
+                    std::cout << "\tVector:" << std::endl;
+                    matrix::rmat::copy(v_rot).print();
+                    std::cout << "\tHamiltonian:" << std::endl;
+                    matrix::cmat::copy(c_rot).print();
+                };
             rotator(
                 const double alpha = 0., 
                 const double beta = 0.,
                 const double gamma = 0.) :
-                rotator({alpha, beta, gamma}) {};
+                    rotator({alpha, beta, gamma}) {};
+            std::vector<double> transform_vector(std::vector<double>& vec) const{
+                if(vec.size() != 3)
+                    throw std::length_error("We are living in 3d world!!!");
+                return vector::dot(vr_rot, vec);
+            };
+            matrix::cmat transform_hamiltonian(const matrix::cmat& hc) const{
+                if(hc.size() != 8)
+                    throw std::length_error("Kane hamiltonian should have 8x8 size");
+                return cr_rot * hc * c_rot;
+            };
     };
 };
 
