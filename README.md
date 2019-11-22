@@ -14,3 +14,6 @@ energy-momentum law in HgCdTe heterostructures.
 2. Intel PSTL (optional, required for parallelism)
 3. Numpy (optional, required for Python wrapper)
 4. Ctypes (optional, required for Python wrapper)
+
+
+If you have any questions - please contact me via [e-mail](mailto:neilkulikov@gmail.com).
