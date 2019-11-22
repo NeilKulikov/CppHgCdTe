@@ -19,7 +19,7 @@ energy-momentum law in HgCdTe heterostructures.
 1. Make sure that the GSL library, cmake, make & any compiler containing a standard C++17 are already installed
 2. Create directory for building: ```mkdir build && cd build```
 3. Run cmake to configure building: ```cmake ..```
-4. Build package, using make: ``` make .```
+4. Build package, using make: ``` make```
 5. *Optional:* run tests: ```ctest --extra-verbose```
 6. Now you can find compiled library in ```build/bin/lib/libinterop.*dylib/*so/*dll```
 
