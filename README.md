@@ -1,6 +1,6 @@
 # CppHgCdTe
 
-Tiny library designed to perform calculations of 
+The tiny library designed to perform calculations of 
 energy-momentum law in HgCdTe heterostructures.
 
 *Main features:*
