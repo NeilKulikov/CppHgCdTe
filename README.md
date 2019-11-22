@@ -7,7 +7,7 @@ energy-momentum law in HgCdTe heterostructures.
 1. Uses Kane 8x8 hamiltonian in Burt-Foreman model with strain (in thin-film approx.)
 2. Allows to compute 2D E(k) relations
 3. Cross-platform library - there is no platform-specific dependencies
-4. The result is standalone shared library & python bindings to call it
+4. The results are standalone shared library & python bindings to call it
 
 *Dependencies:*
 1. GNU Scientific Library
