@@ -174,13 +174,7 @@ namespace rotations{
             rotator(const std::array<double, 3>& ags) : 
                 angles(ags), 
                 v_rot(vec_rot(angles)), vr_rot(v_rot.transpose()),
-                c_rot(ham_rot(angles)), cr_rot(c_rot.conjugate()) {
-                    std::cout << "Rotator:" << std::endl;
-                    std::cout << "\tVector:" << std::endl;
-                    matrix::rmat::copy(v_rot).print();
-                    std::cout << "\tHamiltonian:" << std::endl;
-                    matrix::cmat::copy(c_rot).print();
-                };
+                c_rot(ham_rot(angles)), cr_rot(c_rot.conjugate()) {};
             rotator(
                 const double alpha = 0., 
                 const double beta = 0.,
@@ -194,7 +188,7 @@ namespace rotations{
             matrix::cmat transform_hamiltonian(const matrix::cmat& hc) const{
                 if(hc.size() != 8)
                     throw std::length_error("Kane hamiltonian should have 8x8 size");
-                return cr_rot * hc * c_rot;
+                return c_rot * hc * cr_rot;
             };
     };
 };

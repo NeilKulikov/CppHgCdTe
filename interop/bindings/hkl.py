@@ -1,32 +1,40 @@
-import math as m
 import numpy as np
-from scipy.optimize import root
-
-def rotator(angles):
-    a, b, g = angles
-    gr = np.array([[m.cos(g), m.sin(g), 0.], [-m.sin(g), m.cos(g), 0.], [0., 0., 1.]])
-    br = np.array([[m.cos(b), 0., -m.sin(b)], [0., 1., 0.], [m.sin(b), 0., m.cos(b)]])
-    ar = np.array([[m.cos(a), m.sin(a), 0.], [-m.sin(a), m.cos(a), 0.], [0., 0., 1.]])     
-    return gr @ br @ ar
-
-def rotate(xs, ags):
-    return rotator(ags) @ np.array(xs)
 
 def normalize(vec):
     nvec = np.array(vec)
     return nvec / np.linalg.norm(nvec)
 
-def adopt(x):
-    n = int(0.5 * x / m.pi)
-    return x - 2. * m.pi * float(n)
+def rot_matrix(vz, vx = [1, 0, 0]):
+    nx, nz = normalize(vx), normalize(vz) 
+    assert(abs(np.dot(nx, nz)) < 1.e-12)
+    ny = np.cross(nz, nx)
+    return np.array([nx, ny, nz])
 
-adopt_v = np.vectorize(adopt)
+def angle(sin, cos):
+    if cos > 0.:
+        return np.arctan(sin / cos)
+    elif cos == 0.:
+        return 0.5 * np.pi * np.sign(sin)
+    else:
+        return np.pi * np.sign(sin) + np.arctan(sin / cos)
+
+def euler_ags(rmat, thr = 1.e-10):
+    scb = rmat[2, 2], np.sqrt(1. - rmat[2, 2]**2)
+    if scb[0] < thr:
+        sca = rmat[1, 0], rmat[0, 0]
+        scb = 0., 1.
+        scc = 0., 1.
+    else:
+        norm = np.array(rmat) / scb[0]
+        sca = norm[2, 1], - norm[2, 0]
+        scc = norm[1, 2], norm[0, 2]
+    return np.array([angle(*x) for x in [sca, scb, scc]])
+
+
 
 def angles(hkl):
-    res = normalize(hkl)
-    ort = np.array([0., 0., 1.])
-    fopt = lambda x: rotate(ort, x) - res
-    result = {'success' : False}
-    while result['success'] == False:
-        result = root(fopt, np.random.rand(3))
-    return adopt_v(result['x'])
+    norm = normalize(hkl)
+    rmat = rot_matrix(norm)
+    eulr = euler_ags(rmat)
+    print(eulr)
+    return np.array(eulr)
