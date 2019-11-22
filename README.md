@@ -16,11 +16,11 @@ energy-momentum law in HgCdTe heterostructures.
 4. Ctypes (optional, required for Python wrapper)
 
 *Building:*
-0. Make sure that the GSL libraru is already installed
-1. Create directory for building: ```mkdir build && cd build```
-2. Run cmake to configure building: ```cmake ..```
-3. Build package, using make: ``` make .```
-4. *Optional:* run tests: ```ctest --extra-verbose```
-5. Now you can find compiled library in ```build/bin/lib/libinterop.*dylib/*so/*dll```
+1. Make sure that the GSL library, cmake, make & any compiler containing a standard C++17 are already installed
+2. Create directory for building: ```mkdir build && cd build```
+3. Run cmake to configure building: ```cmake ..```
+4. Build package, using make: ``` make .```
+5. *Optional:* run tests: ```ctest --extra-verbose```
+6. Now you can find compiled library in ```build/bin/lib/libinterop.*dylib/*so/*dll```
 
 If you have any questions - please contact me via [e-mail](mailto:neilkulikov@gmail.com).
