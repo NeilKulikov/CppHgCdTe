@@ -6,7 +6,7 @@ def normalize(vec):
 
 def rot_matrix(vz, vx = [1, 0, 0]):
     nx, nz = normalize(vx), normalize(vz) 
-    assert(abs(np.dot(nx, nz)) < 1.e-12)
+    assert(np.abs(np.dot(nx, nz)) < 1.e-12)
     ny = np.cross(nz, nx)
     return np.array([nx, ny, nz])
 
