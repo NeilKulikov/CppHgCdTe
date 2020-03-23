@@ -438,6 +438,13 @@ namespace matrix{
                         rv.at(i, j) = std::conj(rv.at(i, j));
                 return rv;
             };
+            cmat comp_conjugate(void) const{
+                cmat rv = cmat::copy(*this);
+                for(std::size_t i = 0; i < rv.size(); i++)
+                    for(std::size_t j = 0; j < rv.size(); j++)
+                        rv.at(i, j) = std::conj(rv.at(i, j));
+                return rv;
+            };
     };
 
     cmat dot(cmat const& a, cmat const& b){

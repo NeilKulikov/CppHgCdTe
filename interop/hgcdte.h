@@ -28,5 +28,6 @@ extern "C"{
     int del_diag_ws(void* ws);
     void* get_diag_ws(size_t size);
     void* sum_hinsts(void* a, void* b);
+    double* get_serial(void* hcore, void* strh, size_t n, double* ks);
 };
 #endif

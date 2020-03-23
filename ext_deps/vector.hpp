@@ -542,4 +542,83 @@ namespace vector{
     };
 };
 
+namespace vect{
+        template<typename T, int dim>
+        using vec = std::array<T, dim>;
+        template<typename T, int dim>
+        using vec_it = typename std::array<T, dim>::iterator;
+        template<typename T, int dim>
+        using vec_cit = typename std::array<T, dim>::const_iterator;
+        template<typename T, int dim>
+        using vec_range = std::pair< vec_it<T, dim>, vec_it<T, dim> >;
+        template<typename T, int dim>
+        using vec_crange = std::pair< vec_cit<T, dim>, vec_cit<T, dim> >;
+
+        template<typename T, int dim>
+        vec_range<T, dim> get_range(vec<T, dim>& arg){
+            return {arg.begin(), arg.end()};
+        };
+        template<typename T, int dim>
+        vec_crange<T, dim> get_crange(const vec<T, dim>& arg){
+            return {arg.cbegin(), arg.cend()};
+        };
+
+        template<typename T>
+        T asum(const T a, const T b){ return a + b; };
+        template<typename T>
+        T asub(const T a, const T b){ return a - b; };
+        template<typename T>
+        T amul(const T a, const T b){ return a * b; };
+        template<typename T>
+        T arat(const T a, const T b){ return a / b; };
+
+        template<typename T>
+        using atomic_op = const std::function<T(const T, const T)>;
+
+        template<typename T, int dim>
+        vec<T, dim> range_op(atomic_op<T>& func, const vec_crange<T, dim>& a, const vec_crange<T, dim>& b){
+            vec<T, dim> out;
+            std::transform(a.first, a.second, b.first, out.begin(), func);
+            return out;
+        };
+
+        template<typename T, int dim>
+        vec<T, dim> vec_op(atomic_op<T>& func, const vec<T, dim>& a, const vec<T, dim>& b){
+            return range_op<T, dim>(func, get_crange<T, dim>(a), get_crange<T, dim>(b));
+        };
+
+        template<typename T, int dim>
+        using vec_func = std::function<vec<T,dim>(const vec<T,dim>&, const vec<T,dim>&)>;
+        template<typename T, int dim>
+        using range_func = std::function<vec<T,dim>(const vec_crange<T,dim>&, const vec_crange<T,dim>&)>;
+
+        template<typename T, int dim>
+        vec_func<T, dim> vectorize(atomic_op<T>& func){
+            return std::bind(vec_op<T, dim>, func, std::placeholders::_1, std::placeholders::_2);
+        };
+
+        template<typename T, int dim>
+        range_func<T, dim> vectorize_range(atomic_op<T>& func){
+            return std::bind(range_op<T, dim>, func, std::placeholders::_1, std::placeholders::_2);
+        };
+
+        template<typename T, int dim>
+        const auto sum = vectorize<T, dim>(asum<T>);
+        template<typename T, int dim>
+        const auto sub = vectorize<T, dim>(asub<T>);
+        template<typename T, int dim>
+        const auto mul = vectorize<T, dim>(amul<T>);
+        template<typename T, int dim>
+        const auto rat = vectorize<T, dim>(arat<T>);
+
+        template<typename T, int dim>
+        const auto sum_range = vectorize_range<T, dim>(asum<T>);
+        template<typename T, int dim>
+        const auto sub_range = vectorize_range<T, dim>(asub<T>);
+        template<typename T, int dim>
+        const auto mul_range = vectorize_range<T, dim>(amul<T>);
+        template<typename T, int dim>
+        const auto rat_range = vectorize_range<T, dim>(arat<T>);
+};
+
 #endif

@@ -1,9 +1,19 @@
+#include <list>
 #include <vector>
 #include <fstream>
 #include <iostream>
 #include <exception>
 
 #include <cstring>
+
+#ifdef USE_PSTL
+    #include <pstl/algorithm>
+    #include <pstl/execution>
+#else
+    #include <algorithm>
+#endif
+
+#include <iterator>
 
 #include <matrix.hpp>
 
@@ -17,7 +27,6 @@
 
 
 #include "hgcdte.h"
-
 
 void* make_model(size_t n, double* zs, double* xs){
     std::vector<double> z(zs, zs + n), 
@@ -184,3 +193,27 @@ void* sum_hinsts(void* a, void* b){
     auto rv = (*ha) + (*hb);
     return reinterpret_cast<void*>(new matrix::herm(rv));
 };
+
+struct p2d{
+    double x, y;
+};
+
+/*std::shared_ptr< std::vector<double> >  gen_energies(
+        void* hcore, p2d p, void* strh = nullptr){
+    void* hinst = make_hinst(hcore, p.x, p.y);
+    if(strh != nullptr){
+        void* full_hinst = sum_hinsts(hinst, strh);
+        del_hinst(hinst);
+        hinst = full_hinst;
+    }
+    
+}
+
+double* get_serial(size_t n, double* ks){
+    const std::vector<double> 
+                        kx(&ks[0], &ks[n]),
+                        ky(&ks[n], &ks[2 * n]);
+    std::vector< std::shared_ptr< std::vector<double> > > output(n);
+
+
+}*/

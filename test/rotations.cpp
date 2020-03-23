@@ -8,6 +8,7 @@
 #include <matrix.hpp>
 #include <vector.hpp>
 
+#include <hamiltonian.hpp>
 #include <rotations.hpp>
 
 BOOST_AUTO_TEST_SUITE(RotationTests)
@@ -124,11 +125,35 @@ BOOST_AUTO_TEST_CASE(Rotator013)
     const double    alpha = M_PI * 0.5,
                     beta = atan(1. / 3.),
                     gamma = -M_PI * 0.5;
-    std::cout << std::endl;
     const auto rot = rotations::rotator(alpha, beta, gamma);
-
+    auto cr = matrix::cmat(rot.c_rot);
+    cr.print();
     BOOST_CHECK(true);
 }
 
+BOOST_AUTO_TEST_CASE(real_test)
+{
+    const double    alpha = M_PI * 0.5,
+                    beta = atan(1. / 3.),
+                    gamma = -M_PI * 0.5;
+    auto rot = rotations::rotator(alpha, beta, gamma);
+    std::vector<double> xs = 
+        { 0.0, 5.,   5.0001, 20.0 };
+    std::vector<double> ys = 
+        { 0.1, 0.1,  0.7,    0.7 };
+    materials::heterostruct hs(xs, ys);
+    hamiltonian::hcore hc(hs, 61);
+    auto    spec0 = hc.full_h({0., 0.}, &rot).diagonalize(),
+            spec1 = hc.full_h({1., 0.}, &rot).diagonalize();
+    BOOST_CHECK_CLOSE(spec0[368] - spec0[364], 0.727207, 1.e-1);
+    BOOST_CHECK_CLOSE(spec0[366] - spec0[364], 0.273551, 1.e-1);
+    BOOST_CHECK_CLOSE(spec0[362] - spec0[364], -0.131296, 1.e-1);
+    BOOST_CHECK_CLOSE(spec0[360] - spec0[364], -0.154354, 1.e-1);
+    BOOST_CHECK_CLOSE(spec1[368] - spec0[364], 1.0359056, 1.e-1);
+    BOOST_CHECK_CLOSE(spec1[366] - spec0[364], 0.7820483, 1.e-1);
+    BOOST_CHECK_CLOSE(spec1[364] - spec0[364], -0.07061443, 1.e-1);
+    BOOST_CHECK_CLOSE(spec1[362] - spec0[364], -0.16837806, 1.e-1);
+    BOOST_CHECK_CLOSE(spec1[360] - spec0[364], -0.33397717, 1.e-1);
+}
 
 BOOST_AUTO_TEST_SUITE_END()

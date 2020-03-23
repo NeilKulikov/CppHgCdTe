@@ -13,6 +13,8 @@
 
 #include <constants.hpp>
 
+#include <iostream>
+
 namespace rotations{
     const static std::complex<double> cn = {0., 0.};
     const static std::complex<double> co = {1., 0.};
@@ -164,17 +166,34 @@ namespace rotations{
             return ham_rot({alpha, beta, gamma});
     };
 
+    matrix::cmat term_rot(const matrix::rmat& v_rot){
+        auto v_rot_copy = matrix::rmat::copy(v_rot);
+        std::vector< std::complex<double> > diag{co, cn, cn, cn};
+        auto cv_rot = matrix::cmat::real_copy(v_rot_copy);
+        matrix::cmat ret = matrix::cmat::diagonal(diag);
+        ret.put_submatrix(cv_rot, {1, 1});
+        return ret;
+    };
+
     class rotator{
         public:
             const std::array<double, 3> angles = {0., 0., 0.};
-            const matrix::rmat v_rot = matrix::rmat(3);
-            const matrix::rmat vr_rot = matrix::rmat(3);
-            const matrix::cmat c_rot = matrix::cmat(8);
-            const matrix::cmat cr_rot = matrix::cmat(8);
+            const matrix::rmat v_rot, vr_rot;
+            const matrix::cmat c_rot, cr_rot;
+            const matrix::cmat t_rot, tr_rot;
             rotator(const std::array<double, 3>& ags) : 
                 angles(ags), 
                 v_rot(vec_rot(angles)), vr_rot(v_rot.transpose()),
-                c_rot(ham_rot(angles)), cr_rot(c_rot.conjugate()) {};
+                c_rot(ham_rot(angles)), cr_rot(c_rot.conjugate()),
+                t_rot(term_rot(v_rot)), tr_rot(t_rot.conjugate()){
+                    /*std::cout << std::endl;
+                    matrix::rmat::copy(v_rot).print();
+                    std::cout << std::endl;
+                    matrix::cmat::copy(c_rot).print();
+                    std::cout << std::endl;
+                    matrix::cmat::copy(t_rot).print();
+                    std::cout << std::endl;*/
+                };
             rotator(
                 const double alpha = 0., 
                 const double beta = 0.,
@@ -182,8 +201,13 @@ namespace rotations{
                     rotator({alpha, beta, gamma}) {};
             std::vector<double> transform_vector(std::vector<double>& vec) const{
                 if(vec.size() != 3)
-                    throw std::length_error("We are living in 3d world!!!");
-                return vector::dot(vr_rot, vec);
+                    throw std::length_error("Vector should have 3 size");
+                return vector::dot(v_rot, vec);
+            };
+            matrix::cmat transform_term(const matrix::cmat& tc) const{
+                if(tc.size() != 4)
+                    throw std::length_error("Term should have 4x4 size");
+                return t_rot * tc * tr_rot;
             };
             matrix::cmat transform_hamiltonian(const matrix::cmat& hc) const{
                 if(hc.size() != 8)
